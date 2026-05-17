@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Built on three pillars</title>
+  <link rel="stylesheet" href="./assets/default.css">
+  <script type="module" src="./assets/components.js"></script>
+  <script type="module" src="./assets/runtime.js"></script>
+</head>
+<body data-transition="fade">
+  <slide-three-col current="3" total="8">
+  <div slot="title"><p>Built on three pillars</p>
+</div>
+  <div slot="col-1"><p><strong>Pipeline</strong></p>
+<p>A Node build script reads <code>src/slides.md</code> and emits one HTML file per slide into <code>dist/</code>. No bundler magic — just <code>fs.writeFile</code> and a fast loop.</p>
+</div>
+  <div slot="col-2"><p><strong>Design System</strong></p>
+<p>Lit web components, atomic design, and a full CSS custom property token system. Every visual value is a token. No hardcoded anything.</p>
+</div>
+  <div slot="col-3"><p><strong>Runtime</strong></p>
+<p>A tiny client-side module handles keyboard navigation, fullscreen, view transitions, and a service worker that precaches everything for offline use.</p>
+</div>
+  </slide-three-col>
+</body>
+</html>

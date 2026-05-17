@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Print view</title>
+  <style>
+    body { font-family: sans-serif; max-width: 80ch; margin: 2rem auto; }
+    section { margin-bottom: 2rem; }
+    hr { margin: 2rem 0; border: none; border-top: 2px solid #ccc; }
+    .slide-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #999; margin-bottom: 0.5rem; }
+    .notes { color: #555; font-style: italic; }
+    @media print { hr { break-after: page; } }
+  </style>
+</head>
+<body>
+<section>
+  <p class="slide-label">Slide 1 · title</p>
+  <p>slide-engine 101</p>
+
+<p>A Markdown-powered, web-standards-first presentation engine.
+Built with Lit, CSS custom properties, and a healthy disregard for unnecessary complexity.</p>
+
+  <p class="notes"><strong>Notes:</strong> Welcome. This is the first presentation ever built with slide-engine — which means it is also the system's first real test. No pressure.</p>
+</section>
+<hr>
+<section>
+  <p class="slide-label">Slide 2 · title</p>
+  <p>The problem with other systems</p>
+
+<ul>
+<li><strong>Framework bloat</strong> — you wanted slides, you got a build pipeline the size of a small country</li>
+<li><strong>CDN dependencies</strong> — your fonts vanish the moment the conference Wi-Fi dies</li>
+<li><strong>Monolithic pages</strong> — one giant DOM for 60 slides, fighting the browser all the way</li>
+<li><strong>Magic everywhere</strong> — great until it isn't, and then you're reading source code at midnight</li>
+</ul>
+
+  <p class="notes"><strong>Notes:</strong> Set the scene. Most presentation tools are either too heavy, too opinionated, or they phone home to a CDN at the worst possible moment — right before you go on stage.</p>
+</section>
+<hr>
+<section>
+  <p class="slide-label">Slide 3 · three-col</p>
+  <p>Built on three pillars</p>
+
+<p><strong>Pipeline</strong></p>
+<p>A Node build script reads <code>src/slides.md</code> and emits one HTML file per slide into <code>dist/</code>. No bundler magic — just <code>fs.writeFile</code> and a fast loop.</p>
+
+<p><strong>Design System</strong></p>
+<p>Lit web components, atomic design, and a full CSS custom property token system. Every visual value is a token. No hardcoded anything.</p>
+
+<p><strong>Runtime</strong></p>
+<p>A tiny client-side module handles keyboard navigation, fullscreen, view transitions, and a service worker that precaches everything for offline use.</p>
+
+  <p class="notes"><strong>Notes:</strong> Walk through each pillar briefly. Pipeline is Phase 1, Design System is Phase 2, Runtime is Phase 3.</p>
+</section>
+<hr>
+<section>
+  <p class="slide-label">Slide 4 · content-image</p>
+  <p>A homegrown CMS</p>
+
+<p>Each slide is a fenced block in a single Markdown file.
+Slot fences map content to web component slots — no GUI, no database.</p>
+<pre><code class="language-markdown">---
+type: content-image
+title: My Slide
+notes: Speaker notes go here.
+---
+
+::: left
+- Point one
+- Point two
+:::
+
+::: right
+![Diagram](diagram.png)
+:::
+</code></pre>
+
+<p><strong>Why this works</strong></p>
+<ul>
+<li>One file, one source of truth</li>
+<li>Plain text — version-controlled, diffable, grepable</li>
+<li>Slots are explicit — no guessing where content lands</li>
+<li>The pipeline validates every slide at build time and fails loudly on errors</li>
+<li>Works in any editor, on any machine, forever</li>
+</ul>
+
+  <p class="notes"><strong>Notes:</strong> This is the part that makes slide-engine genuinely different. The Markdown format with slot fences lets you write structured content without a GUI, without a database, and without losing your mind.</p>
+</section>
+<hr>
+<section>
+  <p class="slide-label">Slide 5 · content-image</p>
+  <p>Multi-page — on purpose</p>
+
+<p><strong>One HTML file per slide.</strong></p>
+<p>Navigation is a real browser navigation. View transitions make it feel instant.</p>
+<pre><code class="language-js">export function navigate(url) {
+  if (document.startViewTransition) {
+    document.startViewTransition(() =&gt; {
+      window.location.href = url
+    })
+  } else {
+    window.location.href = url
+  }
+}
+</code></pre>
+
+<p><strong>Why multi-page wins</strong></p>
+<ul>
+<li>Each slide is a standalone document — inspect it, share it, link directly to it</li>
+<li>The browser's back/forward cache handles history for free</li>
+<li>No virtual DOM, no reconciliation, no surprises</li>
+<li>Progressive enhancement: degrades gracefully when the Transitions API is absent</li>
+<li>The service worker precaches every slide before you go on stage</li>
+</ul>
+
+  <p class="notes"><strong>Notes:</strong> This is the big architectural bet. Most presentation tools render all slides in one page and animate between DOM states. slide-engine goes full multi-page and uses the View Transitions API instead.</p>
+</section>
+<hr>
+<section>
+  <p class="slide-label">Slide 6 · three-col</p>
+  <p>Why it's different</p>
+
+<p><strong>Plain vanilla</strong></p>
+<p>No runtime framework outside Lit for components. CSS does the heavy lifting. JS only where CSS cannot do the job. The codebase you can read in an afternoon.</p>
+
+<p><strong>Truly offline</strong></p>
+<p>Self-hosted fonts. Precached assets. A service worker that activates before your talk starts. The Wi-Fi can die and nobody in the audience will know.</p>
+
+<p><strong>Built by Claude</strong></p>
+<p>Every line of code in this system — the parser, the components, the runtime, even this presentation — was written pair-programming with Claude. AI-assisted, human-directed.</p>
+
+  <p class="notes"><strong>Notes:</strong> The three things that make slide-engine worth building. These aren't just technical choices — they're a philosophy.</p>
+</section>
+<hr>
+<section>
+  <p class="slide-label">Slide 7 · title</p>
+  <p>The numbers</p>
+
+<ul>
+<li><strong>7 test files · 30 tests · 0 failures</strong> — every build, every time</li>
+<li><strong>4 self-hosted fonts</strong> — Alegreya, Noto Sans Display, Cascadia Code, zero CDN calls</li>
+<li><strong>1 Markdown file</strong> → as many HTML slides as you need</li>
+<li><strong>~300ms</strong> to rebuild the entire presentation from scratch</li>
+<li><strong>100% offline</strong> — the service worker has you covered before you open your laptop</li>
+</ul>
+
+  <p class="notes"><strong>Notes:</strong> A few numbers to make the point concrete. These are real measurements from the current build.</p>
+</section>
+<hr>
+<section>
+  <p class="slide-label">Slide 8 · title</p>
+  <p>Thank you</p>
+
+<p>Built with slide-engine — a homegrown CMS, a Lit design system, and a healthy amount of Claude.</p>
+<p><strong>github.com/bobbyvandersluis/slide-engine</strong></p>
+
+  <p class="notes"><strong>Notes:</strong> Open it up for questions. If anyone asks how to get started — point them at the GitHub repo.</p>
+</section>
+</body>
+</html>

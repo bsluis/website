@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A homegrown CMS</title>
+  <link rel="stylesheet" href="./assets/default.css">
+  <script type="module" src="./assets/components.js"></script>
+  <script type="module" src="./assets/runtime.js"></script>
+</head>
+<body data-transition="fade">
+  <slide-content-image current="4" total="8">
+  <div slot="title"><p>A homegrown CMS</p>
+</div>
+  <div slot="left"><p>Each slide is a fenced block in a single Markdown file.
+Slot fences map content to web component slots — no GUI, no database.</p>
+<pre><code class="language-markdown">---
+type: content-image
+title: My Slide
+notes: Speaker notes go here.
+---
+
+::: left
+- Point one
+- Point two
+:::
+
+::: right
+![Diagram](diagram.png)
+:::
+</code></pre>
+</div>
+  <div slot="right"><p><strong>Why this works</strong></p>
+<ul>
+<li>One file, one source of truth</li>
+<li>Plain text — version-controlled, diffable, grepable</li>
+<li>Slots are explicit — no guessing where content lands</li>
+<li>The pipeline validates every slide at build time and fails loudly on errors</li>
+<li>Works in any editor, on any machine, forever</li>
+</ul>
+</div>
+  </slide-content-image>
+</body>
+</html>

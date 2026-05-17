@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multi-page — on purpose</title>
+  <link rel="stylesheet" href="./assets/default.css">
+  <script type="module" src="./assets/components.js"></script>
+  <script type="module" src="./assets/runtime.js"></script>
+</head>
+<body data-transition="fade">
+  <slide-content-image current="5" total="8">
+  <div slot="title"><p>Multi-page — on purpose</p>
+</div>
+  <div slot="left"><p><strong>One HTML file per slide.</strong></p>
+<p>Navigation is a real browser navigation. View transitions make it feel instant.</p>
+<pre><code class="language-js">export function navigate(url) {
+  if (document.startViewTransition) {
+    document.startViewTransition(() =&gt; {
+      window.location.href = url
+    })
+  } else {
+    window.location.href = url
+  }
+}
+</code></pre>
+</div>
+  <div slot="right"><p><strong>Why multi-page wins</strong></p>
+<ul>
+<li>Each slide is a standalone document — inspect it, share it, link directly to it</li>
+<li>The browser's back/forward cache handles history for free</li>
+<li>No virtual DOM, no reconciliation, no surprises</li>
+<li>Progressive enhancement: degrades gracefully when the Transitions API is absent</li>
+<li>The service worker precaches every slide before you go on stage</li>
+</ul>
+</div>
+  </slide-content-image>
+</body>
+</html>
