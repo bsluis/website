@@ -11,7 +11,7 @@
  * produces a new cache version, triggering a full cache refresh.
  */
 
-const VERSION = '2026-05-17T11:25:15.524Z'
+const VERSION = '2026-05-17T11:37:39.904Z'
 const CACHE   = `slide-engine-${VERSION}`
 
 self.addEventListener('install', (event) => {
