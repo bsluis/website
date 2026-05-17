@@ -261,11 +261,15 @@
       ty = (e.clientY / window.innerHeight - .5) * 2;
     });
 
-    window.addEventListener('touchmove', e => {
+    function applyTouch(e) {
       const t = e.touches[0];
       tx = (t.clientX / window.innerWidth  - .5) * 2;
       ty = (t.clientY / window.innerHeight - .5) * 2;
-    }, { passive: true });
+    }
+
+    window.addEventListener('touchstart', applyTouch, { passive: true });
+    window.addEventListener('touchmove',  applyTouch, { passive: true });
+    window.addEventListener('touchend',   () => { tx = 0; ty = 0; }, { passive: true });
 
     (function tick() {
       cx += (tx - cx) * .05;
