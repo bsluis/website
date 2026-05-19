@@ -11,8 +11,9 @@
 
     canvas {
       display: block; position: fixed; top: 0; left: 0;
-      width: 100vw; height: 100vh;
+      width: 100%; height: 100%;
       image-rendering: pixelated; image-rendering: crisp-edges;
+      touch-action: none;
       cursor: crosshair;
     }
 
@@ -617,7 +618,12 @@ function refreshHUD() {
 }
 
 // ─── Input ────────────────────────────────────────────────────────────────────
-function handleTap(cx, cy) {
+function handleTap(clientX, clientY) {
+  const rect   = canvas.getBoundingClientRect();
+  const scaleX = canvas.width  / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const cx = (clientX - rect.left) * scaleX;
+  const cy = (clientY - rect.top)  * scaleY;
   tanks.forEach(t => {
     if (!t.alive) return;
     const dx = cx - lp(t.cx), dy = cy - lp(t.cy);
