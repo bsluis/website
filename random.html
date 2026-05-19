@@ -6,11 +6,10 @@
 </head>
 <body>
   <script>
-    const pages = ['index-000.html', 'index-001.html', 'index-002.html'];
-    const from  = document.referrer
-      ? new URL(document.referrer).pathname.split('/').pop()
-      : '';
-    const pool  = pages.filter(p => p !== from);
+    const pages   = ['index-000.html', 'index-001.html', 'index-002.html'];
+    const from    = new URLSearchParams(location.search).get('from');
+    const exclude = from ? `index-${from}.html` : '';
+    const pool    = pages.filter(p => p !== exclude);
     location.replace(pool[Math.floor(Math.random() * pool.length)]);
   </script>
 </body>
