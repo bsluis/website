@@ -365,15 +365,13 @@
     footer .last-updated { color: #00aa00; }
 
     .ring-link {
-      position: fixed;
-      bottom: 1.25rem;
-      left: 1.25rem;
+      align-self: flex-start;
+      padding: 0.5rem 1.25rem 1.5rem;
       font-family: 'VT323', monospace;
       font-size: clamp(1rem, 2.2vw, 1.3rem);
       color: var(--cyan);
       text-decoration: underline;
       letter-spacing: .1em;
-      z-index: 200;
       animation: ring-blink 2.5s step-end infinite;
     }
     .ring-link:hover  { color: var(--yellow); }
@@ -474,6 +472,8 @@
       <p class="last-updated">Last updated: <span>January 1, 1996</span></p>
     </footer>
 
+  <a href="random.html?from=002" class="ring-link">[ you won't regret this ]</a>
+
   </div><!-- .page -->
 
   <script>
@@ -547,6 +547,5 @@
       setCount(count);
     }, { passive: false });
   </script>
-  <a href="random.html?from=002" class="ring-link">[ you won't regret this ]</a>
 </body>
 </html>

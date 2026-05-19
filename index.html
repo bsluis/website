@@ -6,547 +6,305 @@
   <title>Bobby van der Sluis</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=VT323&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Passion+One:wght@900&family=Space+Mono&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --bg:       #000011;
-      --green:    #00ff41;
-      --cyan:     #00ffff;
-      --yellow:   #ffff00;
-      --orange:   #ff8800;
-      --pink:     #ff00cc;
-      --red:      #ff2222;
-      --dim:      rgba(0, 0, 48, 0.88);
-    }
-
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    body {
-      min-height: 100vh;
-      background: var(--bg);
-      color: var(--green);
-      font-family: 'VT323', 'Courier New', monospace;
-      font-size: clamp(1rem, 2.5vw, 1.25rem);
-      user-select: none;
-      overflow-x: hidden;
+    :root {
+      --bg:     #07070d;
+      --cyan:   #00e5ff;
+      --pink:   #ff2d78;
+      --yellow: #ffe600;
+      --purple: #bf40ff;
+      --green:  #00ff88;
     }
 
-    /* ── starfield ───────────────────────────────────────────── */
-    #starfield {
-      position: fixed;
-      inset: 0;
-      z-index: 0;
-      pointer-events: none;
-      touch-action: none;
+    html, body {
       width: 100%;
       height: 100%;
+      overflow: hidden;
+      background: radial-gradient(ellipse at 32% 48%, #0d0d1c 0%, var(--bg) 65%);
+      user-select: none;
     }
 
-    /* ── CRT scanlines ───────────────────────────────────────── */
-    body::after {
-      content: '';
+    /* ── scene ───────────────────────────────────────────────────── */
+    .scene {
       position: fixed;
       inset: 0;
-      z-index: 100;
+      transform-style: preserve-3d;
+    }
+
+    /* ── grid ────────────────────────────────────────────────────── */
+    .grid {
+      position: absolute;
+      inset: -15%;
+      animation: drift 50s linear infinite;
+    }
+
+    @keyframes drift {
+      from { background-position: 0 0; }
+      to   { background-position: 64px 64px; }
+    }
+
+    /* ── shapes ──────────────────────────────────────────────────── */
+    .shapes {
+      position: absolute;
+      inset: 0;
       pointer-events: none;
-      background: repeating-linear-gradient(
-        to bottom,
-        transparent 0, transparent 3px,
-        rgba(0, 0, 0, 0.16) 3px, rgba(0, 0, 0, 0.16) 4px
-      );
     }
 
-    /* ── page layout ─────────────────────────────────────────── */
-    .page {
-      position: relative;
-      z-index: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
+    /* horizontal movers — positioned at grid rows (multiples of 64px) */
+    .h-shape {
+      position: absolute;
+      left: 0;
+      will-change: transform;
     }
 
-    /* ── marquee bar ─────────────────────────────────────────── */
-    .marquee-bar {
-      width: 100%;
-      background: #000033;
-      border-bottom: 2px solid var(--green);
-      overflow: hidden;
-      padding: 0.3rem 0;
-      font-size: 0.95rem;
-      letter-spacing: 0.12em;
+    /* vertical movers — positioned at grid columns (multiples of 64px) */
+    .v-shape {
+      position: absolute;
+      top: 0;
+      will-change: transform;
     }
 
-    .marquee-inner {
-      display: inline-block;
-      white-space: nowrap;
-      animation: marquee-scroll 28s linear infinite;
-      color: var(--yellow);
-      padding-left: 100vw;
-    }
-
-    @keyframes marquee-scroll {
-      0%   { transform: translateX(0); }
-      100% { transform: translateX(-100%); }
-    }
-
-    /* ── content wrapper ─────────────────────────────────────── */
-    .content {
-      width: min(620px, 100% - 2rem);
-      margin: 1.75rem auto 2rem;
-      text-align: center;
-    }
-
-    /* ── rainbow separator ───────────────────────────────────── */
-    .rainbow-hr {
-      border: none;
-      height: 5px;
-      margin: 1.25rem 0;
-      background: linear-gradient(
-        to right,
-        #ff0000, #ff8800, #ffff00,
-        #00ff00, #00ffff, #0088ff,
-        #ff00cc, #ff0000
-      );
-      box-shadow: 0 0 8px rgba(255, 255, 255, 0.35);
-    }
-
-    /* ── badge row ───────────────────────────────────────────── */
-    .badge-row {
-      margin-bottom: 0.75rem;
-      display: flex;
-      justify-content: center;
-      align-items: baseline;
-      gap: 0.5rem;
-    }
-
-    .beta-badge {
-      display: inline-block;
-      background: var(--red);
-      color: #fff;
-      font-family: 'VT323', monospace;
-      font-size: 1.2rem;
-      letter-spacing: 0.25em;
-      padding: 0.15em 0.75em;
-      border: 2px solid #ff8888;
-      text-transform: uppercase;
-      animation: blink-red 1.2s step-end infinite;
-      box-shadow: 0 0 8px var(--red);
-    }
-
-    @keyframes blink-red {
-      0%, 100% { opacity: 1; }
-      50%       { opacity: 0; }
-    }
-
-    .new-badge {
-      display: inline-block;
-      background: var(--yellow);
-      color: #000;
-      font-family: 'VT323', monospace;
-      font-size: 1.05rem;
-      letter-spacing: 0.15em;
-      padding: 0.1em 0.6em;
-      border: 2px solid #aaaa00;
-      text-transform: uppercase;
-      animation: blink-yellow 0.7s step-end infinite;
-    }
-
-    @keyframes blink-yellow {
-      0%, 100% { opacity: 1; }
-      50%       { opacity: 0; }
-    }
-
-    /* ── hero box ────────────────────────────────────────────── */
-    .hero {
-      padding: 1.5rem 1.5rem 1.25rem;
-      background: var(--dim);
-      border: 3px solid var(--cyan);
-      box-shadow: 0 0 20px var(--cyan), inset 0 0 18px rgba(0, 255, 255, 0.04);
-    }
-
-    .hero h1 {
-      font-family: 'Orbitron', sans-serif;
-      font-weight: 900;
-      font-size: clamp(1.35rem, 5.5vw, 2.75rem);
-      text-transform: uppercase;
-      color: var(--cyan);
-      text-shadow:
-        0 0 8px var(--cyan),
-        0 0 22px var(--cyan),
-        3px 3px 0 #001e3c;
-      line-height: 1.1;
-      letter-spacing: 0.06em;
-    }
-
-    .hero h2 {
-      margin-top: 0.8rem;
-      font-family: 'VT323', monospace;
-      font-size: clamp(1.1rem, 3.5vw, 1.5rem);
-      font-weight: normal;
-      color: var(--yellow);
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      text-shadow: 2px 2px 0 #000;
-    }
-
-    /* ── under construction ──────────────────────────────────── */
-    .construction-wrap {
-      margin: 1.25rem 0 0.25rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.6rem;
-    }
-
-    .construction-row {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 1rem;
-    }
-
-    /* CSS "animated GIF" — spinning conic hazard wheel */
-    .hazard-spin {
-      width: clamp(2.75rem, 6vw, 3.5rem);
-      height: clamp(2.75rem, 6vw, 3.5rem);
+    /* shape varieties */
+    .circle {
+      width: .48rem;
+      height: .48rem;
       border-radius: 50%;
-      border: 3px solid var(--orange);
-      background: conic-gradient(
-        #ffaa00  0deg  45deg,  #000  45deg  90deg,
-        #ffaa00  90deg 135deg, #000 135deg 180deg,
-        #ffaa00 180deg 225deg, #000 225deg 270deg,
-        #ffaa00 270deg 315deg, #000 315deg 360deg
-      );
-      animation: spin 1.4s linear infinite;
-      box-shadow: 0 0 12px var(--orange);
-      flex-shrink: 0;
     }
 
-    .hazard-spin.reverse { animation-direction: reverse; }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    .square {
+      width: .38rem;
+      height: .38rem;
     }
 
-    .construction-label {
-      font-family: 'VT323', monospace;
-      font-size: clamp(1rem, 3.5vw, 1.6rem);
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      animation: construction-flash 0.55s step-end infinite;
+    .diamond {
+      width: .44rem;
+      height: .44rem;
     }
 
-    @keyframes construction-flash {
-      0%, 100% { color: var(--orange); text-shadow: 0 0 8px var(--orange), 2px 2px 0 #000; }
-      50%       { color: #ff5500;      text-shadow: 0 0 14px #ff5500, 2px 2px 0 #000; }
+    .cyan   { background: var(--cyan);   box-shadow: 0 0 .3rem .1rem rgba(0,229,255,.6),   0 0 1.2rem rgba(0,229,255,.3); }
+    .pink   { background: var(--pink);   box-shadow: 0 0 .3rem .1rem rgba(255,45,120,.6),  0 0 1.2rem rgba(255,45,120,.3); }
+    .yellow { background: var(--yellow); box-shadow: 0 0 .3rem .1rem rgba(255,230,0,.6),   0 0 1.2rem rgba(255,230,0,.3); }
+    .purple { background: var(--purple); box-shadow: 0 0 .3rem .1rem rgba(191,64,255,.6),  0 0 1.2rem rgba(191,64,255,.3); }
+    .green  { background: var(--green);  box-shadow: 0 0 .3rem .1rem rgba(0,255,136,.6),   0 0 1.2rem rgba(0,255,136,.3); }
+
+    /* horizontal keyframes */
+    @keyframes ltr {
+      from { transform: translateY(-50%) translateX(-3rem); }
+      to   { transform: translateY(-50%) translateX(calc(100vw + 3rem)); }
+    }
+    @keyframes rtl {
+      from { transform: translateY(-50%) translateX(calc(100vw + 3rem)); }
+      to   { transform: translateY(-50%) translateX(-3rem); }
+    }
+    /* diagonal (yellow) */
+    @keyframes diag {
+      from { transform: translate(-3rem, -3rem) rotate(45deg); }
+      to   { transform: translate(calc(100vw + 3rem), calc(100vh + 3rem)) rotate(45deg); }
+    }
+    /* vertical keyframes */
+    @keyframes ttb {
+      from { transform: translateX(-50%) translateY(-3rem); }
+      to   { transform: translateX(-50%) translateY(calc(100vh + 3rem)); }
+    }
+    @keyframes btt {
+      from { transform: translateX(-50%) translateY(calc(100vh + 3rem)); }
+      to   { transform: translateX(-50%) translateY(-3rem); }
     }
 
-    /* sliding hazard barrier strip */
-    .barrier {
-      width: 100%;
-      height: 1.4rem;
-      border-top: 2px solid #7a4800;
-      border-bottom: 2px solid #7a4800;
-      background: repeating-linear-gradient(
-        90deg,
-        #ffaa00 0px, #ffaa00 24px,
-        #000    24px, #000    48px
-      );
-      background-size: 48px 100%;
-      animation: barrier-slide 0.45s linear infinite;
+    /* ── vignette ────────────────────────────────────────────────── */
+    .vignette {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at center, transparent 35%, rgba(7,7,13,.85) 100%);
+      pointer-events: none;
     }
 
-    @keyframes barrier-slide {
-      0%   { background-position-x: 0; }
-      100% { background-position-x: 48px; }
-    }
-
-    /* ── info box ────────────────────────────────────────────── */
-    .info-box {
-      background: rgba(0, 0, 40, 0.92);
-      border: 2px solid var(--green);
-      padding: 1rem 1.25rem;
-      margin: 1.25rem 0;
-      text-align: left;
-      font-size: clamp(1.1rem, 3vw, 1.3rem);
-      line-height: 1.75;
-    }
-
-    .blink       { animation: blink-green 0.9s step-end infinite; }
-    @keyframes blink-green {
-      0%, 100% { opacity: 1; }
-      50%       { opacity: 0; }
-    }
-
-    .cl-cyan   { color: var(--cyan); }
-    .cl-yellow { color: var(--yellow); }
-    .cl-pink   { color: var(--pink); }
-
-    /* ── visitor counter ─────────────────────────────────────── */
-    .counter-section {
-      margin: 1.25rem 0;
-    }
-
-    .counter-label {
-      font-size: 0.95rem;
-      color: #555;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      margin-bottom: 0.5rem;
-    }
-
-    .counter-display {
-      display: inline-flex;
-      border: 3px inset #004400;
-      background: #000;
-      cursor: pointer;
-    }
-
-    .counter-digit {
-      font-family: 'VT323', monospace;
-      font-size: clamp(1.75rem, 5vw, 2.25rem);
-      color: var(--green);
-      width: 1.7rem;
-      text-align: center;
-      border-right: 1px solid #003300;
-      line-height: 1;
-      padding: 0.05em 0;
-      text-shadow: 0 0 8px var(--green);
-      transition: color 0.05s step-end;
-    }
-
-    .counter-digit:last-child { border-right: none; }
-
-    /* ── nav links ───────────────────────────────────────────── */
-    .nav-links {
-      margin: 1.25rem 0 0.5rem;
-      font-size: clamp(1rem, 3vw, 1.25rem);
+    /* ── content ─────────────────────────────────────────────────── */
+    .content {
+      position: absolute;
+      inset: 0;
       display: flex;
-      gap: 1rem;
+      flex-direction: column;
+      align-items: flex-start;
       justify-content: center;
-      flex-wrap: wrap;
+      padding: 8vw;
     }
 
-    .nav-links a {
+    h1 {
+      font-family: 'Passion One', sans-serif;
+      font-size: clamp(3.5rem, 11vw, 10rem);
+      font-weight: 800;
+      line-height: .92;
+      letter-spacing: -.01em;
+      max-width: 7ch;
+      color: #fff;
+      text-shadow: 0 0 2.5rem rgba(0,229,255,.18);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    h2 {
+      font-family: 'Space Mono', monospace;
+      font-size: clamp(.6rem, 1.1vw, .82rem);
+      font-weight: normal;
       color: var(--cyan);
-      text-decoration: none;
-      border-bottom: 1px solid var(--cyan);
-      padding-bottom: 0.1em;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-    }
-    .nav-links a:hover  { color: var(--yellow); border-color: var(--yellow); }
-    .nav-links a:visited { color: var(--pink); border-color: var(--pink); }
-
-    /* ── best viewed notice ──────────────────────────────────── */
-    .best-viewed {
-      margin: 0.75rem 0 0;
-      font-size: 0.9rem;
-      color: #444;
-      letter-spacing: 0.07em;
-      line-height: 1.75;
+      opacity: .45;
+      margin-top: 1.1rem;
+      letter-spacing: .18em;
+      text-transform: lowercase;
+      user-select: none;
     }
 
-    .cl-y2k { color: var(--yellow); }
-
-    /* ── footer ──────────────────────────────────────────────── */
-    footer {
-      margin-top: auto;
-      width: 100%;
-      background: #000022;
-      border-top: 2px solid #002200;
-      padding: 0.75rem 1rem;
-      text-align: center;
-      font-size: 1rem;
-      color: #3a5c3a;
-    }
-
-    footer .last-updated { color: #00aa00; }
-
-    .ring-link {
-      position: fixed;
-      bottom: 1.25rem;
-      left: 1.25rem;
-      font-family: 'VT323', monospace;
-      font-size: clamp(1rem, 2.2vw, 1.3rem);
-      color: var(--cyan);
-      text-decoration: underline;
-      letter-spacing: .1em;
-      z-index: 200;
-      animation: ring-blink 2.5s step-end infinite;
-    }
-    .ring-link:hover  { color: var(--yellow); }
-    .ring-link:visited { color: var(--pink); }
-    @keyframes ring-blink {
-      0%, 80%, 100% { opacity: 1; }
-      85%, 95%      { opacity: 0; }
-    }
-  </style>
-</head>
-<body>
-  <canvas id="starfield"></canvas>
-
-  <div class="page">
-
-    <!-- scrolling marquee -->
-    <div class="marquee-bar" aria-hidden="true">
-      <span class="marquee-inner">
-        ★ WELCOME TO THE INFORMATION SUPERHIGHWAY ★&nbsp;&nbsp;&nbsp;
-        ★ BOBBY VAN DER SLUIS ONLINE ★&nbsp;&nbsp;&nbsp;
-        ★ CREATIVE TECHNOLOGIST — THE NETHERLANDS ★&nbsp;&nbsp;&nbsp;
-        ★ COOL SITE OF THE DAY ★&nbsp;&nbsp;&nbsp;
-        ★ BEST VIEWED WITH NETSCAPE NAVIGATOR 4.0 AT 800×600 ★&nbsp;&nbsp;&nbsp;
-        ★ Y2K COMPLIANT ★&nbsp;&nbsp;&nbsp;
-        ★ DO NOT ADJUST YOUR MONITOR ★&nbsp;&nbsp;&nbsp;
-      </span>
-    </div>
-
-    <div class="content">
-
-      <!-- badges -->
-      <div class="badge-row" aria-hidden="true">
-        <span class="beta-badge">Beta</span>
-        <span class="new-badge">New!</span>
-      </div>
-
-      <!-- hero -->
-      <div class="hero">
-        <h1>Bobby van der Sluis</h1>
-        <h2>Creative Technologist, the Netherlands</h2>
-      </div>
-
-      <hr class="rainbow-hr" aria-hidden="true">
-
-      <!-- under construction -->
-      <div class="construction-wrap" aria-hidden="true">
-        <div class="construction-row">
-          <div class="hazard-spin" aria-hidden="true"></div>
-          <span class="construction-label">⚠ Under Construction ⚠</span>
-          <div class="hazard-spin reverse" aria-hidden="true"></div>
-        </div>
-        <div class="barrier" aria-hidden="true"></div>
-      </div>
-
-      <hr class="rainbow-hr" aria-hidden="true">
-
-      <!-- welcome text -->
-      <div class="info-box" aria-hidden="true">
-        <p><span class="cl-cyan">★</span> <span class="blink">Welcome</span> to my corner of the World Wide Web!</p>
-        <p><span class="cl-yellow">»</span> This page is currently under construction.</p>
-        <p><span class="cl-pink">★</span> Exciting content is on its way — please check back soon! <span class="blink">◄</span></p>
-      </div>
-
-      <!-- visitor counter -->
-      <div class="counter-section" aria-hidden="true">
-        <p class="counter-label">You are visitor number:</p>
-        <div class="counter-display" id="counter" role="text" aria-live="polite" aria-label="Visitor count: 1337">
-          <span class="counter-digit">0</span>
-          <span class="counter-digit">0</span>
-          <span class="counter-digit">0</span>
-          <span class="counter-digit">1</span>
-          <span class="counter-digit">3</span>
-          <span class="counter-digit">3</span>
-          <span class="counter-digit">7</span>
-        </div>
-      </div>
-
-      <hr class="rainbow-hr" aria-hidden="true">
-
-      <!-- nav -->
-      <nav class="nav-links" aria-hidden="true">
-        <a href="#">[Guestbook]</a>
-        <a href="#">[Links]</a>
-        <a href="#">[Email Me]</a>
-        <a href="#">[Awards]</a>
-      </nav>
-
-      <!-- disclaimer -->
-      <p class="best-viewed" aria-hidden="true">
-        ✦ Best viewed at 800×600 in Netscape Navigator 4.0 ✦<br>
-        This site is <span class="cl-y2k">Y2K compliant</span> ✦ Optimised for Internet Explorer 3.0
-      </p>
-
-    </div><!-- .content -->
-
-    <footer aria-hidden="true">
-      <p>© 1996 Bobby van der Sluis — All rights reserved</p>
-      <p class="last-updated">Last updated: <span>January 1, 1996</span></p>
-    </footer>
-
-  </div><!-- .page -->
-
-  <script>
-    // ── starfield ─────────────────────────────────────────────────
-    const canvas = document.getElementById('starfield');
-    const ctx    = canvas.getContext('2d');
-    let W, H, stars, dpr;
-
-    function resize() {
-      dpr = window.devicePixelRatio || 1;
-      W   = window.innerWidth;
-      H   = window.innerHeight;
-      canvas.width  = W * dpr;
-      canvas.height = H * dpr;
-      canvas.style.width  = W + 'px';
-      canvas.style.height = H + 'px';
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      initStars();
-    }
-
-    function initStars() {
-      const n = Math.floor(W * H / 3200);
-      stars = Array.from({ length: n }, () => ({
-        x:    Math.random() * W,
-        y:    Math.random() * H,
-        r:    Math.random() * 1.4 + 0.3,
-        vy:   Math.random() * 0.22 + 0.04,
-        phi:  Math.random() * Math.PI * 2,
-        dphi: Math.random() * 0.04 + 0.015,
-      }));
-    }
-
-    function draw() {
-      requestAnimationFrame(draw);
-      ctx.clearRect(0, 0, W, H);
-      for (const s of stars) {
-        s.y += s.vy;
-        if (s.y > H) { s.y = 0; s.x = Math.random() * W; }
-        s.phi += s.dphi;
-        const a = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(s.phi));
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255,255,255,${a.toFixed(2)})`;
-        ctx.fill();
+    /* ── glitch ──────────────────────────────────────────────────── */
+    @keyframes glitch {
+      0%  {
+        text-shadow: -.06em 0 var(--pink), .06em 0 var(--cyan);
+        transform: skewX(-3deg);
+      }
+      15% {
+        text-shadow: .06em 0 var(--pink), -.06em 0 var(--cyan);
+        transform: skewX(2deg) translateX(.02em);
+      }
+      30% {
+        text-shadow: -.08em 0 var(--yellow), .04em 0 var(--pink);
+        transform: skewX(-1deg);
+      }
+      45% {
+        text-shadow: .04em 0 var(--cyan), -.04em 0 var(--pink);
+        transform: skewX(3deg) translateX(-.02em);
+      }
+      65% {
+        text-shadow: -.02em 0 var(--yellow);
+        transform: skewX(0);
+      }
+      100% {
+        text-shadow: 0 0 2.5rem rgba(0,229,255,.18);
+        transform: none;
       }
     }
 
-    window.addEventListener('resize', resize);
-    resize();
-    draw();
-
-    // ── visitor counter click easter egg ──────────────────────────
-    const counterEl = document.getElementById('counter');
-    const digits    = counterEl.querySelectorAll('.counter-digit');
-    let count       = 1337;
-
-    function setCount(n) {
-      const s = String(n).padStart(digits.length, '0').slice(-digits.length);
-      digits.forEach((d, i) => { d.textContent = s[i]; });
-      counterEl.setAttribute('aria-label', 'Visitor count: ' + n);
+    .glitching {
+      animation: glitch .32s steps(1, end) forwards;
     }
 
-    counterEl.addEventListener('click', () => {
-      count += 1;
-      setCount(count);
+    .ring-link {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 1.75rem;
+      font-family: 'Space Mono', monospace;
+      font-size: clamp(.5rem, .9vw, .65rem);
+      color: var(--cyan);
+      opacity: .3;
+      text-decoration: none;
+      letter-spacing: .12em;
+      text-transform: lowercase;
+      transition: opacity .2s;
+      z-index: 10;
+    }
+    .ring-link:hover { opacity: .8; }
+  </style>
+</head>
+<body>
+  <div class="scene" id="scene">
+
+    <div class="grid" id="grid"></div>
+
+    <div class="shapes">
+
+      <!-- horizontal — top: multiples of 64px -->
+      <div class="h-shape circle cyan"
+           style="top:128px; animation:ltr 14s -5s linear infinite"></div>
+
+      <div class="h-shape square pink"
+           style="top:192px; opacity:.7; animation:rtl 9s -2s linear infinite"></div>
+
+      <div class="h-shape circle cyan"
+           style="top:576px; width:.3rem;height:.3rem; opacity:.6; animation:rtl 11s -4s linear infinite"></div>
+
+      <div class="h-shape square pink"
+           style="top:640px; width:.26rem;height:.26rem; opacity:.45; animation:ltr 7s -1s linear infinite"></div>
+
+      <!-- diagonal — yellow diamond -->
+      <div style="
+        position:absolute;
+        top:0; left:0;
+        width:.44rem; height:.44rem;
+        animation:diag 19s -9s linear infinite;
+        will-change:transform;
+      " class="yellow diamond"></div>
+
+      <!-- vertical — left: multiples of 64px -->
+      <div class="v-shape circle purple"
+           style="left:192px; animation:btt 16s -6s linear infinite"></div>
+
+      <div class="v-shape square green"
+           style="left:448px; width:.36rem;height:.36rem; animation:ttb 12s -3s linear infinite"></div>
+
+    </div>
+
+    <div class="vignette"></div>
+
+    <main class="content">
+      <h1>Bobby van der Sluis</h1>
+      <h2>Creative Technologist, the Netherlands</h2>
+    </main>
+
+  </div>
+
+  <script>
+    // ── grid via JS to sidestep SVG URL encoding ──────────────────
+    const gs = 64;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${gs}" height="${gs}">
+      <path d="M0 ${gs} L${gs} ${gs} M${gs} 0 L${gs} ${gs}"
+            stroke="rgba(0,229,255,0.06)" stroke-width="0.5" fill="none"/>
+      <path d="M${gs/2-5} ${gs/2} L${gs/2+5} ${gs/2}
+               M${gs/2} ${gs/2-5} L${gs/2} ${gs/2+5}"
+            stroke="rgba(0,229,255,0.22)" stroke-width="0.7" fill="none"/>
+    </svg>`;
+    const grid = document.getElementById('grid');
+    grid.style.backgroundImage =
+      `url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}")`;
+    grid.style.backgroundSize = `${gs}px ${gs}px`;
+
+    // ── mouse parallax — whole-scene perspective tilt ─────────────
+    const scene = document.getElementById('scene');
+    let tx = 0, ty = 0, cx = 0, cy = 0;
+
+    window.addEventListener('mousemove', e => {
+      tx = (e.clientX / window.innerWidth  - .5) * 2;
+      ty = (e.clientY / window.innerHeight - .5) * 2;
     });
 
-    counterEl.addEventListener('touchstart', e => {
-      e.preventDefault();
-      count += 1;
-      setCount(count);
-    }, { passive: false });
+    function applyTouch(e) {
+      const t = e.touches[0];
+      tx = (t.clientX / window.innerWidth  - .5) * 2;
+      ty = (t.clientY / window.innerHeight - .5) * 2;
+    }
+
+    window.addEventListener('touchstart', applyTouch, { passive: true });
+    window.addEventListener('touchmove',  applyTouch, { passive: true });
+    window.addEventListener('touchend',   () => { tx = 0; ty = 0; }, { passive: true });
+
+    (function tick() {
+      cx += (tx - cx) * .05;
+      cy += (ty - cy) * .05;
+      scene.style.transform =
+        `perspective(80rem) rotateX(${cy * -8}deg) rotateY(${cx * 8}deg)`;
+      requestAnimationFrame(tick);
+    })();
+
+    // ── click-to-glitch ───────────────────────────────────────────
+    const name = document.querySelector('h1');
+    name.addEventListener('click', () => {
+      name.classList.remove('glitching');
+      name.offsetWidth;
+      name.classList.add('glitching');
+    });
+    name.addEventListener('animationend', () => name.classList.remove('glitching'));
   </script>
-  <a href="random.html?from=002" class="ring-link">[ you won't regret this ]</a>
+  <a href="random.html?from=000" class="ring-link">this way to nowhere →</a>
 </body>
 </html>
