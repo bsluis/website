@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bobby van der Sluis</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=VT323&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:       #000011;
+      --green:    #00ff41;
+      --cyan:     #00ffff;
+      --yellow:   #ffff00;
+      --orange:   #ff8800;
+      --pink:     #ff00cc;
+      --red:      #ff2222;
+      --dim:      rgba(0, 0, 48, 0.88);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--green);
+      font-family: 'VT323', 'Courier New', monospace;
+      font-size: clamp(1rem, 2.5vw, 1.25rem);
+      user-select: none;
+      overflow-x: hidden;
+    }
+
+    /* ── starfield ───────────────────────────────────────────── */
+    #starfield {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      touch-action: none;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ── CRT scanlines ───────────────────────────────────────── */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0, transparent 3px,
+        rgba(0, 0, 0, 0.16) 3px, rgba(0, 0, 0, 0.16) 4px
+      );
+    }
+
+    /* ── page layout ─────────────────────────────────────────── */
+    .page {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    /* ── marquee bar ─────────────────────────────────────────── */
+    .marquee-bar {
+      width: 100%;
+      background: #000033;
+      border-bottom: 2px solid var(--green);
+      overflow: hidden;
+      padding: 0.3rem 0;
+      font-size: 0.95rem;
+      letter-spacing: 0.12em;
+    }
+
+    .marquee-inner {
+      display: inline-block;
+      white-space: nowrap;
+      animation: marquee-scroll 28s linear infinite;
+      color: var(--yellow);
+      padding-left: 100vw;
+    }
+
+    @keyframes marquee-scroll {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-100%); }
+    }
+
+    /* ── content wrapper ─────────────────────────────────────── */
+    .content {
+      width: min(620px, 100% - 2rem);
+      margin: 1.75rem auto 2rem;
+      text-align: center;
+    }
+
+    /* ── rainbow separator ───────────────────────────────────── */
+    .rainbow-hr {
+      border: none;
+      height: 5px;
+      margin: 1.25rem 0;
+      background: linear-gradient(
+        to right,
+        #ff0000, #ff8800, #ffff00,
+        #00ff00, #00ffff, #0088ff,
+        #ff00cc, #ff0000
+      );
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.35);
+    }
+
+    /* ── badge row ───────────────────────────────────────────── */
+    .badge-row {
+      margin-bottom: 0.75rem;
+      display: flex;
+      justify-content: center;
+      align-items: baseline;
+      gap: 0.5rem;
+    }
+
+    .beta-badge {
+      display: inline-block;
+      background: var(--red);
+      color: #fff;
+      font-family: 'VT323', monospace;
+      font-size: 1.2rem;
+      letter-spacing: 0.25em;
+      padding: 0.15em 0.75em;
+      border: 2px solid #ff8888;
+      text-transform: uppercase;
+      animation: blink-red 1.2s step-end infinite;
+      box-shadow: 0 0 8px var(--red);
+    }
+
+    @keyframes blink-red {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0; }
+    }
+
+    .new-badge {
+      display: inline-block;
+      background: var(--yellow);
+      color: #000;
+      font-family: 'VT323', monospace;
+      font-size: 1.05rem;
+      letter-spacing: 0.15em;
+      padding: 0.1em 0.6em;
+      border: 2px solid #aaaa00;
+      text-transform: uppercase;
+      animation: blink-yellow 0.7s step-end infinite;
+    }
+
+    @keyframes blink-yellow {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0; }
+    }
+
+    /* ── hero box ────────────────────────────────────────────── */
+    .hero {
+      padding: 1.5rem 1.5rem 1.25rem;
+      background: var(--dim);
+      border: 3px solid var(--cyan);
+      box-shadow: 0 0 20px var(--cyan), inset 0 0 18px rgba(0, 255, 255, 0.04);
+    }
+
+    h1#name {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 900;
+      font-size: clamp(1.35rem, 5.5vw, 2.75rem);
+      text-transform: uppercase;
+      color: var(--cyan);
+      text-shadow:
+        0 0 8px var(--cyan),
+        0 0 22px var(--cyan),
+        3px 3px 0 #001e3c;
+      line-height: 1.1;
+      letter-spacing: 0.06em;
+    }
+
+    .tagline {
+      margin-top: 0.8rem;
+      font-family: 'VT323', monospace;
+      font-size: clamp(1.1rem, 3.5vw, 1.5rem);
+      color: var(--yellow);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      text-shadow: 2px 2px 0 #000;
+    }
+
+    /* ── under construction ──────────────────────────────────── */
+    .construction-wrap {
+      margin: 1.25rem 0 0.25rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .construction-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+    }
+
+    /* CSS "animated GIF" — spinning conic hazard wheel */
+    .hazard-spin {
+      width: clamp(2.75rem, 6vw, 3.5rem);
+      height: clamp(2.75rem, 6vw, 3.5rem);
+      border-radius: 50%;
+      border: 3px solid var(--orange);
+      background: conic-gradient(
+        #ffaa00  0deg  45deg,  #000  45deg  90deg,
+        #ffaa00  90deg 135deg, #000 135deg 180deg,
+        #ffaa00 180deg 225deg, #000 225deg 270deg,
+        #ffaa00 270deg 315deg, #000 315deg 360deg
+      );
+      animation: spin 1.4s linear infinite;
+      box-shadow: 0 0 12px var(--orange);
+      flex-shrink: 0;
+    }
+
+    .hazard-spin.reverse { animation-direction: reverse; }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .construction-label {
+      font-family: 'VT323', monospace;
+      font-size: clamp(1rem, 3.5vw, 1.6rem);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      animation: construction-flash 0.55s step-end infinite;
+    }
+
+    @keyframes construction-flash {
+      0%, 100% { color: var(--orange); text-shadow: 0 0 8px var(--orange), 2px 2px 0 #000; }
+      50%       { color: #ff5500;      text-shadow: 0 0 14px #ff5500, 2px 2px 0 #000; }
+    }
+
+    /* sliding hazard barrier strip */
+    .barrier {
+      width: 100%;
+      height: 1.4rem;
+      border-top: 2px solid #7a4800;
+      border-bottom: 2px solid #7a4800;
+      background: repeating-linear-gradient(
+        90deg,
+        #ffaa00 0px, #ffaa00 24px,
+        #000    24px, #000    48px
+      );
+      background-size: 48px 100%;
+      animation: barrier-slide 0.45s linear infinite;
+    }
+
+    @keyframes barrier-slide {
+      0%   { background-position-x: 0; }
+      100% { background-position-x: 48px; }
+    }
+
+    /* ── info box ────────────────────────────────────────────── */
+    .info-box {
+      background: rgba(0, 0, 40, 0.92);
+      border: 2px solid var(--green);
+      padding: 1rem 1.25rem;
+      margin: 1.25rem 0;
+      text-align: left;
+      font-size: clamp(1.1rem, 3vw, 1.3rem);
+      line-height: 1.75;
+    }
+
+    .blink       { animation: blink-green 0.9s step-end infinite; }
+    @keyframes blink-green {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0; }
+    }
+
+    .cl-cyan   { color: var(--cyan); }
+    .cl-yellow { color: var(--yellow); }
+    .cl-pink   { color: var(--pink); }
+
+    /* ── visitor counter ─────────────────────────────────────── */
+    .counter-section {
+      margin: 1.25rem 0;
+    }
+
+    .counter-label {
+      font-size: 0.95rem;
+      color: #555;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    .counter-display {
+      display: inline-flex;
+      border: 3px inset #004400;
+      background: #000;
+      cursor: pointer;
+    }
+
+    .counter-digit {
+      font-family: 'VT323', monospace;
+      font-size: clamp(1.75rem, 5vw, 2.25rem);
+      color: var(--green);
+      width: 1.7rem;
+      text-align: center;
+      border-right: 1px solid #003300;
+      line-height: 1;
+      padding: 0.05em 0;
+      text-shadow: 0 0 8px var(--green);
+      transition: color 0.05s step-end;
+    }
+
+    .counter-digit:last-child { border-right: none; }
+
+    /* ── nav links ───────────────────────────────────────────── */
+    .nav-links {
+      margin: 1.25rem 0 0.5rem;
+      font-size: clamp(1rem, 3vw, 1.25rem);
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      color: var(--cyan);
+      text-decoration: none;
+      border-bottom: 1px solid var(--cyan);
+      padding-bottom: 0.1em;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .nav-links a:hover  { color: var(--yellow); border-color: var(--yellow); }
+    .nav-links a:visited { color: var(--pink); border-color: var(--pink); }
+
+    /* ── best viewed notice ──────────────────────────────────── */
+    .best-viewed {
+      margin: 0.75rem 0 0;
+      font-size: 0.9rem;
+      color: #444;
+      letter-spacing: 0.07em;
+      line-height: 1.75;
+    }
+
+    .cl-y2k { color: var(--yellow); }
+
+    /* ── footer ──────────────────────────────────────────────── */
+    footer {
+      margin-top: auto;
+      width: 100%;
+      background: #000022;
+      border-top: 2px solid #002200;
+      padding: 0.75rem 1rem;
+      text-align: center;
+      font-size: 1rem;
+      color: #3a5c3a;
+    }
+
+    footer .last-updated { color: #00aa00; }
+  </style>
+</head>
+<body>
+  <canvas id="starfield"></canvas>
+
+  <div class="page">
+
+    <!-- scrolling marquee -->
+    <div class="marquee-bar" aria-hidden="true">
+      <span class="marquee-inner">
+        ★ WELCOME TO THE INFORMATION SUPERHIGHWAY ★&nbsp;&nbsp;&nbsp;
+        ★ BOBBY VAN DER SLUIS ONLINE ★&nbsp;&nbsp;&nbsp;
+        ★ CREATIVE TECHNOLOGIST — THE NETHERLANDS ★&nbsp;&nbsp;&nbsp;
+        ★ COOL SITE OF THE DAY ★&nbsp;&nbsp;&nbsp;
+        ★ BEST VIEWED WITH NETSCAPE NAVIGATOR 4.0 AT 800×600 ★&nbsp;&nbsp;&nbsp;
+        ★ Y2K COMPLIANT ★&nbsp;&nbsp;&nbsp;
+        ★ DO NOT ADJUST YOUR MONITOR ★&nbsp;&nbsp;&nbsp;
+      </span>
+    </div>
+
+    <div class="content">
+
+      <!-- badges -->
+      <div class="badge-row">
+        <span class="beta-badge">Beta</span>
+        <span class="new-badge">New!</span>
+      </div>
+
+      <!-- hero -->
+      <div class="hero">
+        <h1 id="name">Bobby van der Sluis</h1>
+        <p class="tagline">creative technologist — Netherlands</p>
+      </div>
+
+      <hr class="rainbow-hr">
+
+      <!-- under construction -->
+      <div class="construction-wrap" role="img" aria-label="Under construction">
+        <div class="construction-row">
+          <div class="hazard-spin" aria-hidden="true"></div>
+          <span class="construction-label">⚠ Under Construction ⚠</span>
+          <div class="hazard-spin reverse" aria-hidden="true"></div>
+        </div>
+        <div class="barrier" aria-hidden="true"></div>
+      </div>
+
+      <hr class="rainbow-hr">
+
+      <!-- welcome text -->
+      <div class="info-box">
+        <p><span class="cl-cyan">★</span> <span class="blink">Welcome</span> to my corner of the World Wide Web!</p>
+        <p><span class="cl-yellow">»</span> This page is currently under construction.</p>
+        <p><span class="cl-pink">★</span> Exciting content is on its way — please check back soon! <span class="blink">◄</span></p>
+      </div>
+
+      <!-- visitor counter -->
+      <div class="counter-section">
+        <p class="counter-label">You are visitor number:</p>
+        <div class="counter-display" id="counter" role="text" aria-live="polite" aria-label="Visitor count: 1337">
+          <span class="counter-digit">0</span>
+          <span class="counter-digit">0</span>
+          <span class="counter-digit">0</span>
+          <span class="counter-digit">1</span>
+          <span class="counter-digit">3</span>
+          <span class="counter-digit">3</span>
+          <span class="counter-digit">7</span>
+        </div>
+      </div>
+
+      <hr class="rainbow-hr">
+
+      <!-- nav -->
+      <nav class="nav-links" aria-label="Site sections">
+        <a href="#">[Guestbook]</a>
+        <a href="#">[Links]</a>
+        <a href="#">[Email Me]</a>
+        <a href="#">[Awards]</a>
+      </nav>
+
+      <!-- disclaimer -->
+      <p class="best-viewed">
+        ✦ Best viewed at 800×600 in Netscape Navigator 4.0 ✦<br>
+        This site is <span class="cl-y2k">Y2K compliant</span> ✦ Optimised for Internet Explorer 3.0
+      </p>
+
+    </div><!-- .content -->
+
+    <footer>
+      <p>© 1996 Bobby van der Sluis — All rights reserved</p>
+      <p class="last-updated">Last updated: <span>January 1, 1996</span></p>
+    </footer>
+
+  </div><!-- .page -->
+
+  <script>
+    // ── starfield ─────────────────────────────────────────────────
+    const canvas = document.getElementById('starfield');
+    const ctx    = canvas.getContext('2d');
+    let W, H, stars, dpr;
+
+    function resize() {
+      dpr = window.devicePixelRatio || 1;
+      W   = window.innerWidth;
+      H   = window.innerHeight;
+      canvas.width  = W * dpr;
+      canvas.height = H * dpr;
+      canvas.style.width  = W + 'px';
+      canvas.style.height = H + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      initStars();
+    }
+
+    function initStars() {
+      const n = Math.floor(W * H / 3200);
+      stars = Array.from({ length: n }, () => ({
+        x:    Math.random() * W,
+        y:    Math.random() * H,
+        r:    Math.random() * 1.4 + 0.3,
+        vy:   Math.random() * 0.22 + 0.04,
+        phi:  Math.random() * Math.PI * 2,
+        dphi: Math.random() * 0.04 + 0.015,
+      }));
+    }
+
+    function draw() {
+      requestAnimationFrame(draw);
+      ctx.clearRect(0, 0, W, H);
+      for (const s of stars) {
+        s.y += s.vy;
+        if (s.y > H) { s.y = 0; s.x = Math.random() * W; }
+        s.phi += s.dphi;
+        const a = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(s.phi));
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${a.toFixed(2)})`;
+        ctx.fill();
+      }
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+    draw();
+
+    // ── visitor counter click easter egg ──────────────────────────
+    const counterEl = document.getElementById('counter');
+    const digits    = counterEl.querySelectorAll('.counter-digit');
+    let count       = 1337;
+
+    function setCount(n) {
+      const s = String(n).padStart(digits.length, '0').slice(-digits.length);
+      digits.forEach((d, i) => { d.textContent = s[i]; });
+      counterEl.setAttribute('aria-label', 'Visitor count: ' + n);
+    }
+
+    counterEl.addEventListener('click', () => {
+      count += 1;
+      setCount(count);
+    });
+
+    counterEl.addEventListener('touchstart', e => {
+      e.preventDefault();
+      count += 1;
+      setCount(count);
+    }, { passive: false });
+  </script>
+</body>
+</html>
