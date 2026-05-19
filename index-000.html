@@ -189,6 +189,22 @@
     .glitching {
       animation: glitch .32s steps(1, end) forwards;
     }
+
+    .ring-link {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 1.75rem;
+      font-family: 'Space Mono', monospace;
+      font-size: clamp(.5rem, .9vw, .65rem);
+      color: var(--cyan);
+      opacity: .3;
+      text-decoration: none;
+      letter-spacing: .12em;
+      text-transform: lowercase;
+      transition: opacity .2s;
+      z-index: 10;
+    }
+    .ring-link:hover { opacity: .8; }
   </style>
 </head>
 <body>
@@ -289,5 +305,6 @@
     });
     name.addEventListener('animationend', () => name.classList.remove('glitching'));
   </script>
+  <a href="random.html" class="ring-link">this way to nowhere →</a>
 </body>
 </html>

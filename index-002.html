@@ -165,7 +165,7 @@
       box-shadow: 0 0 20px var(--cyan), inset 0 0 18px rgba(0, 255, 255, 0.04);
     }
 
-    h1#name {
+    .hero h1 {
       font-family: 'Orbitron', sans-serif;
       font-weight: 900;
       font-size: clamp(1.35rem, 5.5vw, 2.75rem);
@@ -179,10 +179,11 @@
       letter-spacing: 0.06em;
     }
 
-    .tagline {
+    .hero h2 {
       margin-top: 0.8rem;
       font-family: 'VT323', monospace;
       font-size: clamp(1.1rem, 3.5vw, 1.5rem);
+      font-weight: normal;
       color: var(--yellow);
       letter-spacing: 0.2em;
       text-transform: uppercase;
@@ -362,6 +363,25 @@
     }
 
     footer .last-updated { color: #00aa00; }
+
+    .ring-link {
+      position: fixed;
+      bottom: 1.25rem;
+      left: 1.25rem;
+      font-family: 'VT323', monospace;
+      font-size: clamp(1rem, 2.2vw, 1.3rem);
+      color: var(--cyan);
+      text-decoration: underline;
+      letter-spacing: .1em;
+      z-index: 200;
+      animation: ring-blink 2.5s step-end infinite;
+    }
+    .ring-link:hover  { color: var(--yellow); }
+    .ring-link:visited { color: var(--pink); }
+    @keyframes ring-blink {
+      0%, 80%, 100% { opacity: 1; }
+      85%, 95%      { opacity: 0; }
+    }
   </style>
 </head>
 <body>
@@ -385,21 +405,21 @@
     <div class="content">
 
       <!-- badges -->
-      <div class="badge-row">
+      <div class="badge-row" aria-hidden="true">
         <span class="beta-badge">Beta</span>
         <span class="new-badge">New!</span>
       </div>
 
       <!-- hero -->
       <div class="hero">
-        <h1 id="name">Bobby van der Sluis</h1>
-        <p class="tagline">creative technologist — Netherlands</p>
+        <h1>Bobby van der Sluis</h1>
+        <h2>Creative Technologist, the Netherlands</h2>
       </div>
 
-      <hr class="rainbow-hr">
+      <hr class="rainbow-hr" aria-hidden="true">
 
       <!-- under construction -->
-      <div class="construction-wrap" role="img" aria-label="Under construction">
+      <div class="construction-wrap" aria-hidden="true">
         <div class="construction-row">
           <div class="hazard-spin" aria-hidden="true"></div>
           <span class="construction-label">⚠ Under Construction ⚠</span>
@@ -408,17 +428,17 @@
         <div class="barrier" aria-hidden="true"></div>
       </div>
 
-      <hr class="rainbow-hr">
+      <hr class="rainbow-hr" aria-hidden="true">
 
       <!-- welcome text -->
-      <div class="info-box">
+      <div class="info-box" aria-hidden="true">
         <p><span class="cl-cyan">★</span> <span class="blink">Welcome</span> to my corner of the World Wide Web!</p>
         <p><span class="cl-yellow">»</span> This page is currently under construction.</p>
         <p><span class="cl-pink">★</span> Exciting content is on its way — please check back soon! <span class="blink">◄</span></p>
       </div>
 
       <!-- visitor counter -->
-      <div class="counter-section">
+      <div class="counter-section" aria-hidden="true">
         <p class="counter-label">You are visitor number:</p>
         <div class="counter-display" id="counter" role="text" aria-live="polite" aria-label="Visitor count: 1337">
           <span class="counter-digit">0</span>
@@ -431,10 +451,10 @@
         </div>
       </div>
 
-      <hr class="rainbow-hr">
+      <hr class="rainbow-hr" aria-hidden="true">
 
       <!-- nav -->
-      <nav class="nav-links" aria-label="Site sections">
+      <nav class="nav-links" aria-hidden="true">
         <a href="#">[Guestbook]</a>
         <a href="#">[Links]</a>
         <a href="#">[Email Me]</a>
@@ -442,14 +462,14 @@
       </nav>
 
       <!-- disclaimer -->
-      <p class="best-viewed">
+      <p class="best-viewed" aria-hidden="true">
         ✦ Best viewed at 800×600 in Netscape Navigator 4.0 ✦<br>
         This site is <span class="cl-y2k">Y2K compliant</span> ✦ Optimised for Internet Explorer 3.0
       </p>
 
     </div><!-- .content -->
 
-    <footer>
+    <footer aria-hidden="true">
       <p>© 1996 Bobby van der Sluis — All rights reserved</p>
       <p class="last-updated">Last updated: <span>January 1, 1996</span></p>
     </footer>
@@ -527,5 +547,6 @@
       setCount(count);
     }, { passive: false });
   </script>
+  <a href="random.html" class="ring-link">[ you won't regret this ]</a>
 </body>
 </html>

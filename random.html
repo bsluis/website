@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Bobby van der Sluis</title>
+</head>
+<body>
+  <script>
+    const pages = ['index-000.html', 'index-001.html', 'index-002.html'];
+    const from  = document.referrer
+      ? new URL(document.referrer).pathname.split('/').pop()
+      : '';
+    const pool  = pages.filter(p => p !== from);
+    location.replace(pool[Math.floor(Math.random() * pool.length)]);
+  </script>
+</body>
+</html>
