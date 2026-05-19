@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BOBBY VAN DER SLUIS — creative technologist</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #1a1208; font-family: 'Press Start 2P', monospace; }
+
+    canvas {
+      display: block; position: fixed; top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      image-rendering: pixelated; image-rendering: crisp-edges;
+      cursor: crosshair;
+    }
+
+    #hud {
+      position: fixed; top: 0; left: 0; width: 100%;
+      display: grid; grid-template-columns: 1fr auto 1fr;
+      align-items: center; gap: .5rem;
+      padding: .9rem 1.2rem .75rem;
+      z-index: 10; pointer-events: none;
+    }
+
+    #branding { text-align: center; }
+
+    h1#name {
+      font-size: clamp(1.1rem, 2.8vw, 2rem);
+      color: #fff;
+      text-shadow: 3px 3px 0 #000;
+      letter-spacing: .04em;
+      white-space: nowrap;
+    }
+
+    #hud p {
+      font-size: clamp(.5rem, 1.1vw, .8rem);
+      color: #fff;
+      text-shadow: 2px 2px 0 #000;
+      margin-top: .4rem;
+      letter-spacing: .06em;
+    }
+
+    .score {
+      font-size: clamp(.5rem, 1.1vw, .8rem);
+      line-height: 2.3;
+    }
+    .score.t1 { color: #4ade80; text-shadow: 2px 2px 0 #000; }
+    .score.t2 { color: #cc2020; text-shadow: 2px 2px 0 #000; text-align: right; }
+  </style>
+</head>
+<body>
+
+<canvas id="arena" aria-hidden="true"></canvas>
+
+<div id="hud">
+  <div class="score t1" id="score1" aria-hidden="true">TANK&nbsp;1<br>KILLS:&nbsp;0</div>
+  <div id="branding">
+    <h1 id="name">BOBBY VAN DER SLUIS</h1>
+    <p>creative technologist &mdash; netherlands</p>
+  </div>
+  <div class="score t2" id="score2" aria-hidden="true">TANK&nbsp;2<br>KILLS:&nbsp;0</div>
+</div>
+
+<script>
+'use strict';
+
+const canvas = document.getElementById('arena');
+const ctx    = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+
+const PX = 4;
+let W, H, HUD_H, bgCache;
+
+function resize() {
+  W     = canvas.width  = window.innerWidth;
+  H     = canvas.height = window.innerHeight;
+  HUD_H = document.getElementById('hud').offsetHeight;
+  bgCache = buildBackground();
+}
+window.addEventListener('resize', resize);
+
+// logical → real pixels (snapped)
+function lp(n) { return Math.round(n) * PX; }
+
+function lerpAngle(a, b, t) {
+  const d = ((b - a + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+  return a + d * t;
+}
+function angleDist(a, b) {
+  return Math.abs(((a - b + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
+}
+
+// ─── Background: top-down sandy desert (no road) ─────────────────────────────
+function buildBackground() {
+  const off = document.createElement('canvas');
+  off.width = W; off.height = H;
+  const c = off.getContext('2d');
+  c.imageSmoothingEnabled = false;
+
+  // warm yellow-sand base
+  c.fillStyle = '#C8A028';
+  c.fillRect(0, 0, W, H);
+
+  // dune formations (top-down oval light/shadow shapes)
+  for (let i = 0; i < 24; i++) {
+    dunePatch(c,
+      PX * 6 + Math.random() * (W - PX * 12),
+      HUD_H + PX * 6 + Math.random() * (H - HUD_H - PX * 12),
+      PX * (18 + Math.floor(Math.random() * 32)),
+      PX * (12 + Math.floor(Math.random() * 20))
+    );
+  }
+
+  // sand noise layers
+  sandNoise(c, 700, '#E4C44C', 0, HUD_H, W, H - HUD_H);
+  sandNoise(c, 500, '#A88020', 0, HUD_H, W, H - HUD_H);
+  sandNoise(c, 200, '#F2DC6C', 0, HUD_H, W, H - HUD_H);
+
+  // rock clusters
+  for (let i = 0; i < 30; i++) {
+    rockCluster(c,
+      Math.random() * W,
+      HUD_H + PX * 3 + Math.random() * (H - HUD_H - PX * 6)
+    );
+  }
+
+  // sparse desert scrub
+  for (let i = 0; i < 50; i++) {
+    scrub(c,
+      Math.random() * W,
+      HUD_H + PX * 4 + Math.random() * (H - HUD_H - PX * 8)
+    );
+  }
+
+  return off;
+}
+
+function dunePatch(c, cx, cy, w, h) {
+  // shadow (offset south-east) → base → bright crest → peak
+  duneOval(c, cx + w * .22, cy + h * .18, w * .82, h * .58, '#9A7818');
+  duneOval(c, cx,           cy,           w * .92, h * .84, '#C0A028');
+  duneOval(c, cx - w * .09, cy - h * .08, w * .52, h * .44, '#E0C04C');
+  duneOval(c, cx - w * .15, cy - h * .13, w * .28, h * .24, '#F4E070');
+}
+
+function duneOval(c, cx, cy, w, h, color) {
+  c.fillStyle = color;
+  const lx = Math.round(cx / PX);
+  const ly = Math.round(cy / PX);
+  const rw = Math.max(1, Math.round(w / PX / 2));
+  const rh = Math.max(1, Math.round(h / PX / 2));
+  for (let dy = -rh; dy <= rh; dy++) {
+    for (let dx = -rw; dx <= rw; dx++) {
+      if (dx * dx / (rw * rw) + dy * dy / (rh * rh) <= 1) {
+        c.fillRect((lx + dx) * PX, (ly + dy) * PX, PX, PX);
+      }
+    }
+  }
+}
+
+function sandNoise(c, n, color, x0, y0, w, h) {
+  c.fillStyle = color;
+  for (let i = 0; i < n; i++) {
+    const x = Math.round((x0 + Math.random() * w) / PX) * PX;
+    const y = Math.round((y0 + Math.random() * h) / PX) * PX;
+    c.fillRect(x, y, PX * (1 + Math.floor(Math.random() * 2)), PX);
+  }
+}
+
+function rockCluster(c, cx, cy) {
+  const cols = ['#4A3020', '#5C4030', '#7A6040', '#3C2818'];
+  const count = 5 + Math.floor(Math.random() * 8);
+  for (let i = 0; i < count; i++) {
+    const rx = Math.round((cx + (Math.random() - .5) * PX * 10) / PX) * PX;
+    const ry = Math.round((cy + (Math.random() - .5) * PX *  7) / PX) * PX;
+    c.fillStyle = cols[Math.floor(Math.random() * cols.length)];
+    c.fillRect(rx, ry, PX * (1 + Math.floor(Math.random() * 2)), PX);
+  }
+  c.fillStyle = '#7A6040'; // highlight pixel
+  c.fillRect(Math.round(cx / PX) * PX, Math.round(cy / PX) * PX, PX, PX);
+}
+
+function scrub(c, sx, sy) {
+  const bx = Math.round(sx / PX) * PX;
+  const by = Math.round(sy / PX) * PX;
+  c.fillStyle = '#2E4818';
+  c.fillRect(bx,      by,       PX, PX * 2);
+  c.fillStyle = '#426024';
+  c.fillRect(bx - PX, by + PX,  PX, PX);
+  c.fillRect(bx + PX, by + PX,  PX, PX);
+  c.fillStyle = '#1E3010';
+  c.fillRect(bx,      by - PX,  PX, PX);
+}
+
+// ─── Sprites (centered at 0,0; barrel → +x / right when angle=0) ─────────────
+
+// Tank 1: green light scout — elongated (16×8), thin tracks, long barrel
+const T1_BODY = [
+  [-8,-4, 16, 1,'#166534'], // top track
+  [-7,-4,  2, 1,'#15803d'], [-4,-4,2,1,'#15803d'], [-1,-4,2,1,'#15803d'], [2,-4,2,1,'#15803d'], [5,-4,2,1,'#15803d'],
+  [-8, 3, 16, 1,'#166534'], // bottom track
+  [-7, 3,  2, 1,'#15803d'], [-4, 3,2,1,'#15803d'], [-1, 3,2,1,'#15803d'], [2, 3,2,1,'#15803d'], [5, 3,2,1,'#15803d'],
+  [-7,-3, 14, 6,'#22c55e'], // hull
+  [-7,-3, 14, 1,'#4ade80'], // top highlight
+  [-7, 2, 14, 1,'#16a34a'], // bottom shadow
+  [-7,-3,  1, 6,'#4ade80'], // left highlight
+  [ 6,-3,  1, 6,'#16a34a'], // right shadow
+  [ 5,-3,  2, 1,'#15803d'], // front corner top
+  [ 5, 2,  2, 1,'#15803d'], // front corner bottom
+  [ 7,-2,  1, 4,'#14532d'], // front tip
+  [-8,-2,  1, 4,'#1a7040'], // rear
+];
+const T1_TURRET = [
+  [-3,-2,  6, 4,'#16a34a'], // turret body
+  [-2,-1,  4, 3,'#15803d'], // inner
+  [-1, 0,  2, 1,'#86efac'], // hatch
+  [ 0,-1,  1, 1,'#4ade80'], // bolt
+  [ 3,-1,  8, 2,'#14532d'], // barrel (long thin)
+  [10,-1,  1, 2,'#0f4020'], // barrel tip
+];
+
+// Tank 2: red heavy — squarish (14×10), thick tracks, wide short barrel
+const T2_BODY = [
+  [-7,-5, 14, 2,'#7f1d1d'], // top track (2px)
+  [-6,-5,  2, 2,'#991b1b'], [-2,-5,2,2,'#991b1b'], [2,-5,2,2,'#991b1b'], [4,-5,2,2,'#991b1b'],
+  [-7, 3, 14, 2,'#7f1d1d'], // bottom track (2px)
+  [-6, 3,  2, 2,'#991b1b'], [-2, 3,2,2,'#991b1b'], [2, 3,2,2,'#991b1b'], [4, 3,2,2,'#991b1b'],
+  [-6,-3, 12, 6,'#ef4444'], // hull
+  [-6,-3,  1, 6,'#fca5a5'], // left highlight
+  [-6,-3, 12, 1,'#f87171'], // top highlight
+  [ 5,-3,  1, 6,'#dc2626'], // right shadow
+  [-6, 2, 12, 1,'#b91c1c'], // bottom shadow
+  [ 4,-3,  2, 1,'#dc2626'], // front skirt top
+  [ 4, 2,  2, 1,'#dc2626'], // front skirt bottom
+  [ 6,-2,  1, 4,'#991b1b'], // front armour
+  [-7,-2,  1, 4,'#c42424'], // rear grille
+];
+const T2_TURRET = [
+  [-4,-3,  8, 6,'#dc2626'], // turret body (wide)
+  [-3,-2,  6, 4,'#b91c1c'], // inner
+  [-4,-3,  1, 6,'#ef4444'], // left plate
+  [ 3,-3,  1, 6,'#991b1b'], // right plate
+  [-1,-1,  3, 2,'#dc2626'], // hatch
+  [ 0, 0,  1, 1,'#fca5a5'], // bolt
+  [ 4,-2,  6, 4,'#991b1b'], // barrel (wide short)
+  [ 4,-2,  6, 1,'#b91c1c'], // barrel top highlight
+  [ 9,-1,  1, 2,'#7f1d1d'], // barrel tip
+];
+
+function drawCentered(sprite) {
+  sprite.forEach(([dx,dy,w,h,col]) => {
+    ctx.fillStyle = col;
+    ctx.fillRect(lp(dx), lp(dy), lp(w), lp(h));
+  });
+}
+
+// ─── Bullet ───────────────────────────────────────────────────────────────────
+const BULLET_SPEED = 4.8;
+
+class Bullet {
+  constructor(x, y, angle, color) {
+    this.x = x; this.y = y;
+    this.angle = angle;
+    this.vx = Math.cos(angle) * BULLET_SPEED;
+    this.vy = Math.sin(angle) * BULLET_SPEED;
+    this.color = color;
+    this.alive = true;
+  }
+  update() {
+    this.x += this.vx;
+    this.y += this.vy;
+    if (this.x < -14 || this.x > W / PX + 14 ||
+        this.y < HUD_H / PX - 14 || this.y > H / PX + 14) this.alive = false;
+  }
+  draw() {
+    ctx.save();
+    ctx.translate(lp(this.x), lp(this.y));
+    ctx.rotate(this.angle);
+    ctx.fillStyle = this.color;
+    ctx.fillRect(lp(-5), lp(-1), lp(10), lp(3)); // long body
+    ctx.fillStyle = '#FFD700';
+    ctx.fillRect(lp(-4), lp(-1), lp(7),  lp(1)); // golden core
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(lp(-5), lp(-1), lp(3),  lp(1)); // bright tip
+    ctx.restore();
+  }
+}
+
+// ─── Explosion ────────────────────────────────────────────────────────────────
+const EXP_COLS = ['#fbbf24','#f97316','#ef4444','#fde68a','#fff','#fb923c'];
+
+function drawExplosion(x, y, frame) {
+  const t = frame / 26;
+  const r = Math.round(13 * Math.sin(t * Math.PI));
+  for (let i = 0; i < 14; i++) {
+    const angle = i / 14 * Math.PI * 2 + t * 5;
+    const dist  = r * (.45 + .55 * Math.abs(Math.sin(i * 1.9 + t * 3)));
+    const ex = Math.round(x + Math.cos(angle) * dist);
+    const ey = Math.round(y + Math.sin(angle) * dist * .7);
+    const s  = Math.max(1, Math.round(4.5 - t * 4));
+    ctx.fillStyle = EXP_COLS[i % EXP_COLS.length];
+    ctx.fillRect(lp(ex - s), lp(ey - s), lp(s * 2), lp(s * 2));
+  }
+  if (t < .38) {
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(lp(x - 3), lp(y - 3), lp(6), lp(6));
+  }
+}
+
+// ─── Tank ─────────────────────────────────────────────────────────────────────
+class Tank {
+  constructor(id, body, turret, bulletColor, hitR, barrelLen, maxSpd) {
+    this.id = id;
+    this.body = body; this.turret = turret;
+    this.bulletColor = bulletColor;
+    this.hitR = hitR;
+    this.barrelLen = barrelLen;
+    this.maxSpd = maxSpd;
+    this.score = 0;
+    this.alive = false;
+    this.bullet = null;
+    // state
+    this.x = 0; this.y = 0;
+    this.bodyAngle = 0; this.turretAngle = 0;
+    this.speed = maxSpd;
+    this.alpha = 1; this.fadeIn = false;
+    this.chaseMode = true; this.chaseCD = 0;
+    this.wanderAngle = 0; this.wanderCD = 0;
+    this.shootCD = 0;
+    this.trackTimer = 0;
+  }
+
+  get cx() { return this.x; }
+  get cy() { return this.y; }
+
+  _initCommon() {
+    this.alive = true;
+    this.bullet = null;
+    this.shootCD  = 100 + Math.floor(Math.random() * 80);
+    this.chaseCD  =  50 + Math.floor(Math.random() * 60);
+    this.chaseMode = true;
+    this.wanderAngle = this.bodyAngle;
+    this.wanderCD = 0;
+  }
+
+  spawnInitial(x, y, angle) {
+    this.x = x; this.y = y;
+    this.bodyAngle = angle;
+    this.turretAngle = angle;
+    this.speed = this.maxSpd;
+    this.alpha = 1; this.fadeIn = false;
+    this._initCommon();
+  }
+
+  spawnEdge() {
+    const pTop = HUD_H / PX, pBot = H / PX;
+    const edge = Math.floor(Math.random() * 4);
+    switch (edge) {
+      case 0: this.x = -14;           this.y = pTop + Math.random() * (pBot - pTop); this.bodyAngle =              (Math.random() - .5) * .6; break;
+      case 1: this.x = W / PX + 14;  this.y = pTop + Math.random() * (pBot - pTop); this.bodyAngle = Math.PI    + (Math.random() - .5) * .6; break;
+      case 2: this.x = Math.random() * W / PX; this.y = pTop - 14;        this.bodyAngle = Math.PI * .5  + (Math.random() - .5) * .6; break;
+      case 3: this.x = Math.random() * W / PX; this.y = pBot + 14;        this.bodyAngle = -Math.PI * .5 + (Math.random() - .5) * .6; break;
+    }
+    this.turretAngle = this.bodyAngle;
+    this.speed = this.maxSpd * (.8 + Math.random() * .4);
+    this.alpha = 0; this.fadeIn = true;
+    this._initCommon();
+  }
+
+  update(enemy) {
+    if (!this.alive) return;
+
+    if (this.fadeIn) {
+      this.alpha = Math.min(1, this.alpha + .035);
+      if (this.alpha >= 1) this.fadeIn = false;
+    }
+
+    // ── movement AI — per-tank personality ──
+    // id=0 (scout): aggressive, quick turns, high chase rate
+    // id=1 (heavy): methodical, slow arcs, lower chase rate, wider orbits
+    const chaseChance  = this.id === 0 ? 0.76 : 0.52;
+    const bodyLerpRate = this.id === 0 ? 0.10 : 0.05;
+    const wanderJitter = this.id === 0 ? 1.0  : 0.55;
+    const chaseNoise   = this.id === 0 ? 0.38 : 0.60;
+
+    this.chaseCD--;
+    if (this.chaseCD <= 0) {
+      this.chaseMode = Math.random() < chaseChance;
+      this.chaseCD = this.id === 0
+        ? 55 + Math.floor(Math.random() * 120)
+        : 85 + Math.floor(Math.random() * 160);
+    }
+
+    let desired;
+    if (this.chaseMode && enemy.alive) {
+      desired = Math.atan2(enemy.cy - this.cy, enemy.cx - this.cx)
+              + (Math.random() - .5) * chaseNoise;
+    } else {
+      this.wanderCD--;
+      if (this.wanderCD <= 0) {
+        this.wanderAngle += (Math.random() - .5) * Math.PI * wanderJitter;
+        this.wanderCD = 45 + Math.floor(Math.random() * 65);
+      }
+      desired = this.wanderAngle;
+    }
+
+    // ── separation: prevent overlap and orbital deadlock ──
+    if (enemy.alive) {
+      const sdx = enemy.cx - this.cx;
+      const sdy = enemy.cy - this.cy;
+      const dist2 = sdx * sdx + sdy * sdy;
+      const MIN_SEP = 26;
+      if (dist2 < MIN_SEP * MIN_SEP && dist2 > 0.01) {
+        const dist = Math.sqrt(dist2);
+        const awayAngle = Math.atan2(-sdy, -sdx);
+        // Opposite side-offsets per tank break the symmetric orbit
+        const side = this.id === 0 ? 1 : -1;
+        const deflect = awayAngle + side * (Math.PI / 2.4);
+        const strength = Math.pow(1 - dist / MIN_SEP, 1.5);
+        desired = lerpAngle(desired, deflect, Math.min(0.92, strength * 1.4));
+      }
+    }
+
+    this.bodyAngle = lerpAngle(this.bodyAngle, desired, bodyLerpRate);
+    this.x += Math.cos(this.bodyAngle) * this.speed;
+    this.y += Math.sin(this.bodyAngle) * this.speed;
+
+    // wrap
+    const pTop = HUD_H / PX, pBot = H / PX, m = 16;
+    if (this.x >  W / PX + m) this.x = -m;
+    if (this.x < -m)          this.x =  W / PX + m;
+    if (this.y >  pBot + m)   this.y =  pTop - m;
+    if (this.y <  pTop - m)   this.y =  pBot + m;
+
+    // ── tire track marks ──
+    this.trackTimer++;
+    if (this.trackTimer >= 5 && !this.fadeIn) {
+      this.trackTimer = 0;
+      addTrack(this.cx, this.cy, this.bodyAngle, this.id);
+    }
+
+    // ── turret tracks enemy (different slew rate per tank) ──
+    const turretLerp = this.id === 0 ? 0.07 : 0.04;
+    if (enemy.alive) {
+      const ta = Math.atan2(enemy.cy - this.cy, enemy.cx - this.cx);
+      this.turretAngle = lerpAngle(this.turretAngle, ta, turretLerp);
+    }
+
+    // ── shooting ──
+    if (!this.bullet?.alive) {
+      this.shootCD--;
+      if (this.shootCD <= 0) {
+        if (enemy.alive) {
+          const aim = Math.atan2(enemy.cy - this.cy, enemy.cx - this.cx);
+          if (angleDist(this.turretAngle, aim) < .45) {
+            this.fire();
+            this.shootCD = 60 + Math.floor(Math.random() * 90);
+          } else {
+            this.shootCD = 18; // retry soon
+          }
+        } else {
+          this.shootCD = 40;
+        }
+      }
+    }
+    if (this.bullet?.alive) this.bullet.update();
+  }
+
+  fire() {
+    const noise = (Math.random() - .5) * .18;
+    const angle = this.turretAngle + noise;
+    this.bullet = new Bullet(
+      this.cx + Math.cos(this.turretAngle) * this.barrelLen,
+      this.cy + Math.sin(this.turretAngle) * this.barrelLen,
+      angle,
+      this.bulletColor
+    );
+  }
+
+  draw() {
+    if (!this.alive) return;
+    ctx.save();
+    ctx.globalAlpha = this.alpha;
+
+    ctx.save();
+    ctx.translate(lp(this.cx), lp(this.cy));
+    ctx.rotate(this.bodyAngle);
+    drawCentered(this.body);
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(lp(this.cx), lp(this.cy));
+    ctx.rotate(this.turretAngle);
+    drawCentered(this.turret);
+    ctx.restore();
+
+    ctx.restore();
+    if (this.bullet?.alive) this.bullet.draw();
+  }
+}
+
+// ─── Tire tracks ──────────────────────────────────────────────────────────────
+const tracks = []; // { x, y, angle, tankId, op }
+
+function addTrack(x, y, angle, tankId) {
+  tracks.push({ x, y, angle, tankId, op: 0.36 });
+}
+
+function updateTracks() {
+  for (let i = tracks.length - 1; i >= 0; i--) {
+    tracks[i].op -= 0.0023; // ~157 frames ≈ 5 s at 30 fps (3× original)
+    if (tracks[i].op <= 0) tracks.splice(i, 1);
+  }
+}
+
+function drawTracks() {
+  tracks.forEach(tr => {
+    if (tr.op < 0.015) return;
+    ctx.save();
+    ctx.globalAlpha = tr.op;
+    ctx.translate(lp(tr.x), lp(tr.y));
+    ctx.rotate(tr.angle);
+    ctx.fillStyle = '#3C2808';
+    if (tr.tankId === 1) {
+      // heavy tank — 2 px thick tracks at ±4
+      ctx.fillRect(lp(-2), lp(-5), lp(4), lp(2));
+      ctx.fillRect(lp(-2), lp( 3), lp(4), lp(2));
+    } else {
+      // scout — 1 px thin tracks at ±3
+      ctx.fillRect(lp(-2), lp(-4), lp(4), lp(1));
+      ctx.fillRect(lp(-2), lp( 3), lp(4), lp(1));
+    }
+    ctx.restore();
+  });
+}
+
+// ─── Game state ───────────────────────────────────────────────────────────────
+let tanks, explosions;
+
+function init() {
+  resize();
+  const pTop = HUD_H / PX, pBot = H / PX;
+  const midY = pTop + (pBot - pTop) * .5;
+
+  tanks = [
+    new Tank(0, T1_BODY, T1_TURRET, '#86efac', 7, 11, .48),
+    new Tank(1, T2_BODY, T2_TURRET, '#fca5a5', 9, 10, .38),
+  ];
+  tanks[0].spawnInitial(W / PX * .5, midY, Math.random() * Math.PI * 2);
+  tanks[1].spawnEdge();
+  explosions = [];
+}
+
+function addExplosion(cx, cy) { explosions.push({ x: cx, y: cy, frame: 0 }); }
+
+function hitCheck(shooter, target) {
+  if (!shooter.bullet?.alive || !target.alive) return false;
+  const dx = shooter.bullet.x - target.cx;
+  const dy = shooter.bullet.y - target.cy;
+  return dx * dx + dy * dy < target.hitR * target.hitR;
+}
+
+function kill(tank, killerIdx) {
+  if (!tank.alive) return;
+  addExplosion(tank.cx, tank.cy);
+  tank.alive = false;
+  if (killerIdx === -1) {
+    // player tap → freebie to the opponent
+    const opp = tanks.find(t => t !== tank);
+    if (opp) { opp.score++; refreshHUD(); }
+  } else {
+    tanks[killerIdx].score++;
+    refreshHUD();
+  }
+  setTimeout(() => tank.spawnEdge(), 3200);
+}
+
+function refreshHUD() {
+  document.getElementById('score1').innerHTML = `TANK&nbsp;1<br>KILLS:&nbsp;${tanks[0].score}`;
+  document.getElementById('score2').innerHTML = `TANK&nbsp;2<br>KILLS:&nbsp;${tanks[1].score}`;
+}
+
+// ─── Input ────────────────────────────────────────────────────────────────────
+function handleTap(cx, cy) {
+  tanks.forEach(t => {
+    if (!t.alive) return;
+    const dx = cx - lp(t.cx), dy = cy - lp(t.cy);
+    if (dx * dx + dy * dy < lp(t.hitR) * lp(t.hitR)) kill(t, -1);
+  });
+}
+canvas.addEventListener('click', e => handleTap(e.clientX, e.clientY));
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  Array.from(e.touches).forEach(t => handleTap(t.clientX, t.clientY));
+}, { passive: false });
+
+// ─── Loop ─────────────────────────────────────────────────────────────────────
+function update() {
+  const [t1, t2] = tanks;
+  t1.update(t2); t2.update(t1);
+  if (hitCheck(t1, t2)) kill(t2, 0);
+  if (hitCheck(t2, t1)) kill(t1, 1);
+  explosions.forEach(e => e.frame++);
+  explosions = explosions.filter(e => e.frame < 28);
+  updateTracks();
+}
+
+function draw() {
+  if (bgCache) ctx.drawImage(bgCache, 0, 0);
+  drawTracks();
+  tanks.forEach(t => t.draw());
+  explosions.forEach(e => drawExplosion(e.x, e.y, e.frame));
+}
+
+const FRAME_MS = 1000 / 30;
+let lastTime = 0;
+function loop(ts) {
+  requestAnimationFrame(loop);
+  if (ts - lastTime < FRAME_MS) return;
+  lastTime = ts;
+  update();
+  draw();
+}
+
+init();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
