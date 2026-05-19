@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BOBBY VAN DER SLUIS — creative technologist</title>
+  <title>Bobby van der Sluis</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -18,13 +18,17 @@
 
     #hud {
       position: fixed; top: 0; left: 0; width: 100%;
-      display: grid; grid-template-columns: 1fr auto 1fr;
+      display: grid;
+      grid-template-areas: "score1 branding score2";
+      grid-template-columns: 1fr auto 1fr;
       align-items: center; gap: .5rem;
       padding: .9rem 1.2rem .75rem;
       z-index: 10; pointer-events: none;
     }
 
-    #branding { text-align: center; }
+    #branding { grid-area: branding; text-align: center; }
+    #score1   { grid-area: score1; }
+    #score2   { grid-area: score2; }
 
     h1#name {
       font-size: clamp(1.1rem, 2.8vw, 2rem);
@@ -32,6 +36,7 @@
       text-shadow: 3px 3px 0 #000;
       letter-spacing: .04em;
       white-space: nowrap;
+      text-transform: uppercase;
     }
 
     #hud p {
@@ -48,6 +53,17 @@
     }
     .score.t1 { color: #4ade80; text-shadow: 2px 2px 0 #000; }
     .score.t2 { color: #cc2020; text-shadow: 2px 2px 0 #000; text-align: right; }
+
+    @media (max-width: 540px) {
+      #hud {
+        grid-template-areas: "branding branding" "score1 score2";
+        grid-template-columns: 1fr 1fr;
+        padding: .55rem .8rem .45rem;
+        gap: .15rem .4rem;
+      }
+      h1#name { white-space: normal; }
+      .score { line-height: 1.8; }
+    }
   </style>
 </head>
 <body>
@@ -57,8 +73,8 @@
 <div id="hud">
   <div class="score t1" id="score1" aria-hidden="true">TANK&nbsp;1<br>KILLS:&nbsp;0</div>
   <div id="branding">
-    <h1 id="name">BOBBY VAN DER SLUIS</h1>
-    <p>creative technologist &mdash; netherlands</p>
+    <h1 id="name">Bobby van der Sluis</h1>
+    <p>creative technologist — Netherlands</p>
   </div>
   <div class="score t2" id="score2" aria-hidden="true">TANK&nbsp;2<br>KILLS:&nbsp;0</div>
 </div>
@@ -107,22 +123,22 @@ function buildBackground() {
   for (let i = 0; i < 24; i++) {
     dunePatch(c,
       PX * 6 + Math.random() * (W - PX * 12),
-      HUD_H + PX * 6 + Math.random() * (H - HUD_H - PX * 12),
+      PX * 6 + Math.random() * (H - PX * 12),
       PX * (18 + Math.floor(Math.random() * 32)),
       PX * (12 + Math.floor(Math.random() * 20))
     );
   }
 
   // sand noise layers
-  sandNoise(c, 700, '#E4C44C', 0, HUD_H, W, H - HUD_H);
-  sandNoise(c, 500, '#A88020', 0, HUD_H, W, H - HUD_H);
-  sandNoise(c, 200, '#F2DC6C', 0, HUD_H, W, H - HUD_H);
+  sandNoise(c, 700, '#E4C44C', 0, 0, W, H);
+  sandNoise(c, 500, '#A88020', 0, 0, W, H);
+  sandNoise(c, 200, '#F2DC6C', 0, 0, W, H);
 
   // rock clusters
   for (let i = 0; i < 30; i++) {
     rockCluster(c,
       Math.random() * W,
-      HUD_H + PX * 3 + Math.random() * (H - HUD_H - PX * 6)
+      PX * 3 + Math.random() * (H - PX * 6)
     );
   }
 
@@ -130,7 +146,7 @@ function buildBackground() {
   for (let i = 0; i < 50; i++) {
     scrub(c,
       Math.random() * W,
-      HUD_H + PX * 4 + Math.random() * (H - HUD_H - PX * 8)
+      PX * 4 + Math.random() * (H - PX * 8)
     );
   }
 
@@ -553,6 +569,24 @@ function init() {
   explosions = [];
 }
 
+function separateTanks(t1, t2) {
+  if (!t1.alive || !t2.alive) return;
+  const dx = t2.cx - t1.cx;
+  const dy = t2.cy - t1.cy;
+  const dist2 = dx * dx + dy * dy;
+  const MIN = 20; // logical px — approx sum of body half-extents
+  if (dist2 < MIN * MIN && dist2 > 0.001) {
+    const dist  = Math.sqrt(dist2);
+    const push  = (MIN - dist) * 0.5;
+    const nx = dx / dist;
+    const ny = dy / dist;
+    t1.x -= nx * push;
+    t1.y -= ny * push;
+    t2.x += nx * push;
+    t2.y += ny * push;
+  }
+}
+
 function addExplosion(cx, cy) { explosions.push({ x: cx, y: cy, frame: 0 }); }
 
 function hitCheck(shooter, target) {
@@ -600,6 +634,7 @@ canvas.addEventListener('touchstart', e => {
 function update() {
   const [t1, t2] = tanks;
   t1.update(t2); t2.update(t1);
+  separateTanks(t1, t2);
   if (hitCheck(t1, t2)) kill(t2, 0);
   if (hitCheck(t2, t1)) kill(t1, 1);
   explosions.forEach(e => e.frame++);
