@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bobby van der Sluis</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Passion+One:wght@900&family=Space+Mono&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:     #07070d;
+      --cyan:   #00e5ff;
+      --pink:   #ff2d78;
+      --yellow: #ffe600;
+      --purple: #bf40ff;
+      --green:  #00ff88;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: radial-gradient(ellipse at 32% 48%, #0d0d1c 0%, var(--bg) 65%);
+      user-select: none;
+    }
+
+    /* ── scene ───────────────────────────────────────────────────── */
+    .scene {
+      position: fixed;
+      inset: 0;
+      transform-style: preserve-3d;
+    }
+
+    /* ── grid ────────────────────────────────────────────────────── */
+    .grid {
+      position: absolute;
+      inset: -15%;
+      animation: drift 50s linear infinite;
+    }
+
+    @keyframes drift {
+      from { background-position: 0 0; }
+      to   { background-position: 64px 64px; }
+    }
+
+    /* ── shapes ──────────────────────────────────────────────────── */
+    .shapes {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    /* horizontal movers — positioned at grid rows (multiples of 64px) */
+    .h-shape {
+      position: absolute;
+      left: 0;
+      will-change: transform;
+    }
+
+    /* vertical movers — positioned at grid columns (multiples of 64px) */
+    .v-shape {
+      position: absolute;
+      top: 0;
+      will-change: transform;
+    }
+
+    /* shape varieties */
+    .circle {
+      width: .48rem;
+      height: .48rem;
+      border-radius: 50%;
+    }
+
+    .square {
+      width: .38rem;
+      height: .38rem;
+    }
+
+    .diamond {
+      width: .44rem;
+      height: .44rem;
+    }
+
+    .cyan   { background: var(--cyan);   box-shadow: 0 0 .3rem .1rem rgba(0,229,255,.6),   0 0 1.2rem rgba(0,229,255,.3); }
+    .pink   { background: var(--pink);   box-shadow: 0 0 .3rem .1rem rgba(255,45,120,.6),  0 0 1.2rem rgba(255,45,120,.3); }
+    .yellow { background: var(--yellow); box-shadow: 0 0 .3rem .1rem rgba(255,230,0,.6),   0 0 1.2rem rgba(255,230,0,.3); }
+    .purple { background: var(--purple); box-shadow: 0 0 .3rem .1rem rgba(191,64,255,.6),  0 0 1.2rem rgba(191,64,255,.3); }
+    .green  { background: var(--green);  box-shadow: 0 0 .3rem .1rem rgba(0,255,136,.6),   0 0 1.2rem rgba(0,255,136,.3); }
+
+    /* horizontal keyframes */
+    @keyframes ltr {
+      from { transform: translateY(-50%) translateX(-3rem); }
+      to   { transform: translateY(-50%) translateX(calc(100vw + 3rem)); }
+    }
+    @keyframes rtl {
+      from { transform: translateY(-50%) translateX(calc(100vw + 3rem)); }
+      to   { transform: translateY(-50%) translateX(-3rem); }
+    }
+    /* diagonal (yellow) */
+    @keyframes diag {
+      from { transform: translate(-3rem, -3rem) rotate(45deg); }
+      to   { transform: translate(calc(100vw + 3rem), calc(100vh + 3rem)) rotate(45deg); }
+    }
+    /* vertical keyframes */
+    @keyframes ttb {
+      from { transform: translateX(-50%) translateY(-3rem); }
+      to   { transform: translateX(-50%) translateY(calc(100vh + 3rem)); }
+    }
+    @keyframes btt {
+      from { transform: translateX(-50%) translateY(calc(100vh + 3rem)); }
+      to   { transform: translateX(-50%) translateY(-3rem); }
+    }
+
+    /* ── vignette ────────────────────────────────────────────────── */
+    .vignette {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at center, transparent 35%, rgba(7,7,13,.85) 100%);
+      pointer-events: none;
+    }
+
+    /* ── content ─────────────────────────────────────────────────── */
+    .content {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 8vw;
+    }
+
+    h1 {
+      font-family: 'Passion One', sans-serif;
+      font-size: clamp(3.5rem, 11vw, 10rem);
+      font-weight: 800;
+      line-height: .92;
+      letter-spacing: -.01em;
+      max-width: 7ch;
+      color: #fff;
+      text-shadow: 0 0 2.5rem rgba(0,229,255,.18);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    h2 {
+      font-family: 'Space Mono', monospace;
+      font-size: clamp(.6rem, 1.1vw, .82rem);
+      font-weight: normal;
+      color: var(--cyan);
+      opacity: .45;
+      margin-top: 1.1rem;
+      letter-spacing: .18em;
+      text-transform: lowercase;
+      user-select: none;
+    }
+
+    /* ── glitch ──────────────────────────────────────────────────── */
+    @keyframes glitch {
+      0%  {
+        text-shadow: -.06em 0 var(--pink), .06em 0 var(--cyan);
+        transform: skewX(-3deg);
+      }
+      15% {
+        text-shadow: .06em 0 var(--pink), -.06em 0 var(--cyan);
+        transform: skewX(2deg) translateX(.02em);
+      }
+      30% {
+        text-shadow: -.08em 0 var(--yellow), .04em 0 var(--pink);
+        transform: skewX(-1deg);
+      }
+      45% {
+        text-shadow: .04em 0 var(--cyan), -.04em 0 var(--pink);
+        transform: skewX(3deg) translateX(-.02em);
+      }
+      65% {
+        text-shadow: -.02em 0 var(--yellow);
+        transform: skewX(0);
+      }
+      100% {
+        text-shadow: 0 0 2.5rem rgba(0,229,255,.18);
+        transform: none;
+      }
+    }
+
+    .glitching {
+      animation: glitch .32s steps(1, end) forwards;
+    }
+  </style>
+</head>
+<body>
+  <div class="scene" id="scene">
+
+    <div class="grid" id="grid"></div>
+
+    <div class="shapes">
+
+      <!-- horizontal — top: multiples of 64px -->
+      <div class="h-shape circle cyan"
+           style="top:128px; animation:ltr 14s -5s linear infinite"></div>
+
+      <div class="h-shape square pink"
+           style="top:192px; opacity:.7; animation:rtl 9s -2s linear infinite"></div>
+
+      <div class="h-shape circle cyan"
+           style="top:576px; width:.3rem;height:.3rem; opacity:.6; animation:rtl 11s -4s linear infinite"></div>
+
+      <div class="h-shape square pink"
+           style="top:640px; width:.26rem;height:.26rem; opacity:.45; animation:ltr 7s -1s linear infinite"></div>
+
+      <!-- diagonal — yellow diamond -->
+      <div style="
+        position:absolute;
+        top:0; left:0;
+        width:.44rem; height:.44rem;
+        animation:diag 19s -9s linear infinite;
+        will-change:transform;
+      " class="yellow diamond"></div>
+
+      <!-- vertical — left: multiples of 64px -->
+      <div class="v-shape circle purple"
+           style="left:192px; animation:btt 16s -6s linear infinite"></div>
+
+      <div class="v-shape square green"
+           style="left:448px; width:.36rem;height:.36rem; animation:ttb 12s -3s linear infinite"></div>
+
+    </div>
+
+    <div class="vignette"></div>
+
+    <main class="content">
+      <h1>Bobby van der Sluis</h1>
+      <h2>Creative Technologist, the Netherlands</h2>
+    </main>
+
+  </div>
+
+  <script>
+    // ── grid via JS to sidestep SVG URL encoding ──────────────────
+    const gs = 64;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${gs}" height="${gs}">
+      <path d="M0 ${gs} L${gs} ${gs} M${gs} 0 L${gs} ${gs}"
+            stroke="rgba(0,229,255,0.06)" stroke-width="0.5" fill="none"/>
+      <path d="M${gs/2-5} ${gs/2} L${gs/2+5} ${gs/2}
+               M${gs/2} ${gs/2-5} L${gs/2} ${gs/2+5}"
+            stroke="rgba(0,229,255,0.22)" stroke-width="0.7" fill="none"/>
+    </svg>`;
+    const grid = document.getElementById('grid');
+    grid.style.backgroundImage =
+      `url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}")`;
+    grid.style.backgroundSize = `${gs}px ${gs}px`;
+
+    // ── mouse parallax — whole-scene perspective tilt ─────────────
+    const scene = document.getElementById('scene');
+    let tx = 0, ty = 0, cx = 0, cy = 0;
+
+    window.addEventListener('mousemove', e => {
+      tx = (e.clientX / window.innerWidth  - .5) * 2;
+      ty = (e.clientY / window.innerHeight - .5) * 2;
+    });
+
+    function applyTouch(e) {
+      const t = e.touches[0];
+      tx = (t.clientX / window.innerWidth  - .5) * 2;
+      ty = (t.clientY / window.innerHeight - .5) * 2;
+    }
+
+    window.addEventListener('touchstart', applyTouch, { passive: true });
+    window.addEventListener('touchmove',  applyTouch, { passive: true });
+    window.addEventListener('touchend',   () => { tx = 0; ty = 0; }, { passive: true });
+
+    (function tick() {
+      cx += (tx - cx) * .05;
+      cy += (ty - cy) * .05;
+      scene.style.transform =
+        `perspective(80rem) rotateX(${cy * -8}deg) rotateY(${cx * 8}deg)`;
+      requestAnimationFrame(tick);
+    })();
+
+    // ── click-to-glitch ───────────────────────────────────────────
+    const name = document.querySelector('h1');
+    name.addEventListener('click', () => {
+      name.classList.remove('glitching');
+      name.offsetWidth;
+      name.classList.add('glitching');
+    });
+    name.addEventListener('animationend', () => name.classList.remove('glitching'));
+  </script>
+</body>
+</html>
