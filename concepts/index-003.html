@@ -431,8 +431,15 @@
     }, { passive: true });
 
     card.addEventListener('touchmove', e => {
-      e.preventDefault();
-      track(e.touches[0].clientX, e.touches[0].clientY);
+      const t = e.touches[0];
+      const r = card.getBoundingClientRect();
+      if (t.clientX >= r.left && t.clientX <= r.right &&
+          t.clientY >= r.top  && t.clientY <= r.bottom) {
+        e.preventDefault();
+        track(t.clientX, t.clientY);
+      } else {
+        resetTilt();
+      }
     }, { passive: false });
 
     card.addEventListener('touchend', e => {
