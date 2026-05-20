@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bobby van der Sluis</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Montserrat:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    /* ── tokens ──────────────────────────────────────── */
+    :root {
+      --page-bg:      #0d0c0a;
+      --front-bg-a:   #1e1b15;
+      --front-bg-b:   #131108;
+      --front-text:   #ede5d8;
+      --front-sub:    #c4a257;
+      --front-rule:   rgba(196, 162, 87, 0.4);
+      --front-border: rgba(196, 162, 87, 0.1);
+      --back-bg-a:    #f8f4ef;
+      --back-bg-b:    #ede7df;
+      --back-border:  rgba(175, 148, 102, 0.28);
+      --ui-color:     rgba(255, 255, 255, 0.2);
+      --ui-hover:     rgba(255, 255, 255, 0.5);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--page-bg);
+      font-family: 'Montserrat', sans-serif;
+      overflow: hidden;
+      user-select: none;
+      transition: background-color 0.75s ease;
+    }
+
+    body.light {
+      --page-bg:   #ede8e2;
+      --ui-color:  rgba(0, 0, 0, 0.22);
+      --ui-hover:  rgba(0, 0, 0, 0.5);
+    }
+
+    /* ── scene ───────────────────────────────────────── */
+    .scene {
+      perspective: 900px;
+      perspective-origin: 50% 50%;
+    }
+
+    /* ── card ────────────────────────────────────────── */
+    .card {
+      position: relative;
+      width: clamp(280px, 80vw, 500px);
+      aspect-ratio: 1.75;
+      transform-style: preserve-3d;
+      cursor: pointer;
+      will-change: transform;
+      --pointer-x:    50%;
+      --pointer-y:    50%;
+      --foil-angle:   135deg;
+      --card-opacity: 0;
+    }
+
+    /*
+     * Firefox fix: backface-visibility: hidden and overflow: hidden
+     * must NOT be on the same element — Firefox misrenders this
+     * combination in 3D contexts. So .face is a bare wrapper that
+     * only carries backface-visibility; .face-surface is a child
+     * that carries overflow, border-radius and all visuals.
+     */
+
+    /* ── face wrapper (backface-visibility only) ─────── */
+    .face {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+
+    .face-back {
+      transform: rotateY(180deg);
+    }
+
+    /* ── face surface (visuals + overflow clip) ──────── */
+    .face-surface {
+      position: absolute;
+      inset: 0;
+      border-radius: 0.8rem;
+      overflow: hidden;
+      /*
+       * No isolation: isolate here — it creates a compositing layer inside
+       * the preserve-3d tree that Safari cannot reconcile with
+       * backface-visibility: hidden, causing faces to vanish after flip.
+       * The foil pseudo-elements use plain opacity instead of mix-blend-mode
+       * so no stacking-context containment is needed.
+       */
+    }
+
+    /* ── FRONT surface ───────────────────────────────── */
+    .face-front .face-surface {
+      background: linear-gradient(140deg, var(--front-bg-a) 0%, var(--front-bg-b) 100%);
+      border: 1px solid var(--front-border);
+      box-shadow:
+        0 2px 6px  rgba(0, 0, 0, 0.22),
+        0 16px 48px rgba(0, 0, 0, 0.32),
+        0 48px 96px rgba(0, 0, 0, 0.38),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: clamp(1.4rem, 6%, 2.4rem) clamp(1.6rem, 8%, 3rem);
+    }
+
+    /*
+     * Foil/shine effect — two layers via ::before and ::after:
+     *   ::before — broad radial light source + directional foil band
+     *   ::after  — tight specular hot spot
+     *
+     * No mix-blend-mode (plain opacity only). At these low opacity values
+     * screen blend and normal blend are visually equivalent on a dark
+     * background, so dropping the blend mode costs nothing perceptually
+     * and avoids the need for isolation: isolate (which breaks Safari).
+     */
+    /*
+     * Two layers stacked on ::before:
+     *   1. Broad radial light source — wide soft ellipse at the pointer.
+     *   2. Directional foil band — linear-gradient sheen that sweeps with
+     *      the foil lerp angle and pans with background-position.
+     */
+    .face-front .face-surface::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      background:
+        radial-gradient(
+          ellipse 160% 100% at var(--pointer-x) var(--pointer-y),
+          rgba(255, 252, 245, 0.14)  0%,
+          rgba(255, 250, 240, 0.03) 52%,
+          transparent               72%
+        ),
+        linear-gradient(
+          var(--foil-angle),
+          transparent                   15%,
+          rgba(255, 252, 248, 0.08)    36%,
+          rgba(255, 250, 244, 0.18)    50%,
+          rgba(255, 252, 248, 0.08)    64%,
+          transparent                   85%
+        );
+      background-size:     100% 100%, 300% 300%;
+      background-position: 0 0,       var(--foil-bg-pos);
+      opacity: var(--card-opacity);
+      transition: opacity 0.45s ease;
+    }
+
+    /* specular hot spot — tight bright circle at the same position */
+    .face-front .face-surface::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      background: radial-gradient(
+        circle 22% at var(--pointer-x) var(--pointer-y),
+        rgba(255, 254, 250, 0.38)  0%,
+        rgba(255, 251, 244, 0.10) 45%,
+        transparent               70%
+      );
+      opacity: var(--card-opacity);
+      transition: opacity 0.45s ease;
+    }
+
+    /* ── front: typography ──────────────────────────── */
+    h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-size: clamp(1.4rem, 4vw, 2.1rem);
+      color: var(--front-text);
+      letter-spacing: 0.04em;
+      line-height: 1.1;
+    }
+
+    .rule {
+      width: 1.8rem;
+      height: 1px;
+      background: var(--front-rule);
+      margin: clamp(0.75rem, 2.5vw, 1.1rem) 0;
+    }
+
+    h2 {
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 400;
+      font-size: clamp(0.52rem, 1.2vw, 0.72rem);
+      color: var(--front-sub);
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      line-height: 2.1;
+    }
+
+    /* ── BACK surface ────────────────────────────────── */
+    .face-back .face-surface {
+      background: linear-gradient(150deg, var(--back-bg-a) 0%, var(--back-bg-b) 100%);
+      border: 1px solid var(--back-border);
+      box-shadow:
+        0 2px 6px  rgba(0, 0, 0, 0.08),
+        0 16px 48px rgba(0, 0, 0, 0.1),
+        0 36px 80px rgba(0, 0, 0, 0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* inset border frame */
+    .face-back .face-surface::before {
+      content: '';
+      position: absolute;
+      inset: 0.65rem;
+      border: 1px solid var(--back-border);
+      border-radius: 0.35rem;
+      pointer-events: none;
+    }
+
+    /* corner ornament */
+    .face-back .face-surface::after {
+      content: '◆';
+      position: absolute;
+      bottom: 1.3rem;
+      right: 1.5rem;
+      font-size: clamp(0.42rem, 0.9vw, 0.58rem);
+      color: rgba(175, 148, 102, 0.38);
+    }
+
+    .monogram {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-weight: 300;
+      font-size: clamp(5rem, 17vw, 9.5rem);
+      color: rgba(160, 132, 88, 0.13);
+      line-height: 1;
+      pointer-events: none;
+      letter-spacing: -0.04em;
+    }
+
+    /* ── grain ───────────────────────────────────────── */
+    /*
+     * feTurbulence fractalNoise rendered into a 180×180 SVG tile,
+     * desaturated via feColorMatrix, then tiled as a background-image.
+     * No mix-blend-mode here — blend modes on child divs inside a
+     * preserve-3d tree cause Safari to create conflicting compositing
+     * layers, breaking the card rendering. Plain opacity is safe
+     * cross-browser and still produces visible grain texture.
+     * The %23 is a URL-encoded # for the internal filter reference.
+     */
+    .grain {
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      opacity: 0.07;
+      background-image: url("data:image/svg+xml;charset=utf-8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='180' height='180' filter='url(%23g)'/></svg>");
+      background-size: 180px 180px;
+    }
+
+    /* ── UI chrome ───────────────────────────────────── */
+    .hint {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.75rem;
+      font-size: clamp(0.45rem, 0.78vw, 0.6rem);
+      letter-spacing: 0.16em;
+      text-transform: lowercase;
+      color: var(--ui-color);
+      pointer-events: none;
+      transition: color 0.75s ease;
+    }
+
+    .ring-link {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 1.75rem;
+      font-size: clamp(0.45rem, 0.78vw, 0.6rem);
+      letter-spacing: 0.16em;
+      text-transform: lowercase;
+      color: var(--ui-color);
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+    .ring-link:hover { color: var(--ui-hover); }
+  </style>
+</head>
+<body>
+
+  <div class="scene">
+    <div class="card" id="card">
+
+      <div class="face face-front">
+        <div class="face-surface">
+          <div class="grain" aria-hidden="true"></div>
+          <h1>Bobby van der Sluis</h1>
+          <div class="rule" aria-hidden="true"></div>
+          <h2>Creative Technologist, the Netherlands</h2>
+        </div>
+      </div>
+
+      <div class="face face-back" aria-hidden="true">
+        <div class="face-surface">
+          <div class="grain" aria-hidden="true"></div>
+          <span class="monogram">B</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <p class="hint" aria-hidden="true">click to flip</p>
+  <a href="random.html?from=003" class="ring-link">not all those who wander →</a>
+
+  <script>
+    const card = document.getElementById('card');
+    const body = document.body;
+
+    // ── state ─────────────────────────────────────────
+    let flipped   = false;
+    let animating = false;
+
+    // Tilt — snappy, linear
+    let tRx = 0,   tRy = 0;
+    let cRx = 0,   cRy = 0;
+    const LERP_TILT = 0.075;
+    const MAX_X     = 16;
+    const MAX_Y     = 22;
+
+    // Foil — lazy, non-linear; own lerp so it drifts behind the tilt
+    let tFx = 0.5, tFy = 0.5;
+    let cFx = 0.5, cFy = 0.5;
+    const LERP_FOIL = 0.06;
+
+    function lerp(a, b, t) { return a + (b - a) * t; }
+
+    // Remap 0–1 through a power curve centred at 0.5.
+    // Exponent > 1: compressed near centre, amplified at edges —
+    // the foil stays lazy in the middle and rushes at the extremes,
+    // like a real reflection angle rather than a direct cursor echo.
+    function foilCurve(n) {
+      const t = (n - 0.5) * 2;                           // –1 → +1
+      return 0.5 + Math.sign(t) * Math.pow(Math.abs(t), 1.8) * 0.5;
+    }
+
+    // ── render loop ────────────────────────────────────
+    (function tick() {
+      if (!animating) {
+        // tilt
+        cRx = lerp(cRx, tRx, LERP_TILT);
+        cRy = lerp(cRy, tRy, LERP_TILT);
+        const base = flipped ? 180 : 0;
+        card.style.transform = `rotateX(${cRx}deg) rotateY(${base + cRy}deg)`;
+
+        // foil — slower lerp, curved position
+        cFx = lerp(cFx, tFx, LERP_FOIL);
+        cFy = lerp(cFy, tFy, LERP_FOIL);
+        const bx = (0.75 - cFx * 0.5) * 100;
+        const by = (0.75 - cFy * 0.5) * 100;
+        card.style.setProperty('--pointer-x',   `${(cFx * 100).toFixed(1)}%`);
+        card.style.setProperty('--pointer-y',   `${(cFy * 100).toFixed(1)}%`);
+        card.style.setProperty('--foil-angle',  `${(135 + (cFx - 0.5) * 90).toFixed(1)}deg`);
+        card.style.setProperty('--foil-bg-pos', `${bx.toFixed(1)}% ${by.toFixed(1)}%`);
+      }
+      requestAnimationFrame(tick);
+    })();
+
+    // ── pointer tracking ───────────────────────────────
+    function track(cx, cy) {
+      if (animating) return;
+      const r  = card.getBoundingClientRect();
+      const nx = (cx - r.left) / r.width;
+      const ny = (cy - r.top)  / r.height;
+
+      tRx = (0.5 - ny) * MAX_X * 2;
+      tRy = (nx - 0.5) * MAX_Y * 2;
+
+      tFx = foilCurve(nx);
+      tFy = foilCurve(ny);
+
+      card.style.setProperty('--card-opacity', '1');
+    }
+
+    function resetTilt() {
+      tRx = 0; tRy = 0;
+      tFx = 0.5; tFy = 0.5;
+      card.style.setProperty('--card-opacity', '0');
+    }
+
+    card.addEventListener('mousemove',  e => track(e.clientX, e.clientY));
+    card.addEventListener('mouseleave', resetTilt);
+
+    // ── flip ──────────────────────────────────────────
+    function doFlip() {
+      if (animating) return;
+      animating = true;
+
+      tRx = 0; tRy = 0; cRx = 0; cRy = 0;
+      tFx = 0.5; tFy = 0.5; cFx = 0.5; cFy = 0.5;
+      card.style.setProperty('--card-opacity', '0');
+
+      flipped = !flipped;
+      const deg = flipped ? 180 : 0;
+
+      card.style.transition = 'transform 0.7s cubic-bezier(0.23, 1, 0.32, 1)';
+      card.style.transform  = `rotateX(0deg) rotateY(${deg}deg)`;
+      body.classList.toggle('light');
+
+      setTimeout(() => {
+        card.style.transition = '';
+        animating = false;
+      }, 750);
+    }
+
+    card.addEventListener('click', doFlip);
+
+    // ── touch ──────────────────────────────────────────
+    let tx0, ty0, tt0;
+
+    card.addEventListener('touchstart', e => {
+      tx0 = e.touches[0].clientX;
+      ty0 = e.touches[0].clientY;
+      tt0 = Date.now();
+    }, { passive: true });
+
+    card.addEventListener('touchmove', e => {
+      e.preventDefault();
+      track(e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive: false });
+
+    card.addEventListener('touchend', e => {
+      const dx = e.changedTouches[0].clientX - tx0;
+      const dy = e.changedTouches[0].clientY - ty0;
+      resetTilt();
+      if (Math.hypot(dx, dy) < 12 && Date.now() - tt0 < 400) doFlip();
+    }, { passive: true });
+  </script>
+</body>
+</html>

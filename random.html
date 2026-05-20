@@ -6,7 +6,7 @@
 </head>
 <body>
   <script>
-    const pages   = ['index-000.html', 'index-001.html', 'index-002.html'];
+    const pages   = ['index-000.html', 'index-001.html', 'index-002.html', 'index-003.html'];
     const from    = new URLSearchParams(location.search).get('from');
     const exclude = from ? `index-${from}.html` : '';
     const pool    = pages.filter(p => p !== exclude);
