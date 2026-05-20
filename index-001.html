@@ -612,7 +612,11 @@ function hitCheck(shooter, target) {
   if (!shooter.bullet?.alive || !target.alive) return false;
   const dx = shooter.bullet.x - target.cx;
   const dy = shooter.bullet.y - target.cy;
-  return dx * dx + dy * dy < target.hitR * target.hitR;
+  if (dx * dx + dy * dy < target.hitR * target.hitR) {
+    shooter.bullet.alive = false;
+    return true;
+  }
+  return false;
 }
 
 function kill(tank, killerIdx) {
