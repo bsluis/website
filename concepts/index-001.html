@@ -405,6 +405,7 @@ class Tank {
   }
 
   update(enemy) {
+    if (this.bullet?.alive) this.bullet.update();
     if (!this.alive) return;
 
     if (this.fadeIn) {
@@ -500,7 +501,6 @@ class Tank {
         }
       }
     }
-    if (this.bullet?.alive) this.bullet.update();
   }
 
   fire() {
@@ -515,6 +515,7 @@ class Tank {
   }
 
   draw() {
+    if (this.bullet?.alive) this.bullet.draw();
     if (!this.alive) return;
     ctx.save();
     ctx.globalAlpha = this.alpha;
@@ -532,7 +533,6 @@ class Tank {
     ctx.restore();
 
     ctx.restore();
-    if (this.bullet?.alive) this.bullet.draw();
   }
 }
 
