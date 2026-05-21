@@ -291,8 +291,12 @@
     (function tick() {
       cx += (tx - cx) * .05;
       cy += (ty - cy) * .05;
+      // Perspective scales with viewport width: narrower screen → tighter
+      // perspective → more dramatic distortion without any extra mouse travel.
+      // Clamped so it stays readable on very small or very large screens.
+      const persp = Math.max(14, Math.min(52, window.innerWidth / 24));
       scene.style.transform =
-        `perspective(80rem) rotateX(${cy * -8}deg) rotateY(${cx * 8}deg)`;
+        `perspective(${persp}rem) rotateX(${cy * -13}deg) rotateY(${cx * 16}deg)`;
       requestAnimationFrame(tick);
     })();
 
