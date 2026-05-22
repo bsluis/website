@@ -104,12 +104,13 @@
   document.fonts.ready.then(main);
 
   function main() {
-    let W = window.innerWidth;
-    let H = window.innerHeight;
+    let W   = window.innerWidth;
+    let H   = window.innerHeight;
+    let DPR = Math.min(window.devicePixelRatio, 2); // cap at 2 — 3× costs 9× pixels
 
     // ── Renderer ───────────────────────────────────────
     const renderer = new THREE.WebGLRenderer({ antialias: false });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    renderer.setPixelRatio(DPR);
     renderer.setSize(W, H);
     Object.assign(renderer.domElement.style, {
       position: 'fixed', inset: '0', width: '100%', height: '100%',
@@ -129,9 +130,10 @@
       depthBuffer:  false,
       stencilBuffer:false,
     };
-    let rtOcc  = new THREE.WebGLRenderTarget(W, H, rtOpts);
-    let rtRays = new THREE.WebGLRenderTarget(W, H, rtOpts);
-    let rtCol  = new THREE.WebGLRenderTarget(W, H, rtOpts);
+    // Render targets use physical pixels so they match the renderer output exactly.
+    let rtOcc  = new THREE.WebGLRenderTarget(W * DPR, H * DPR, rtOpts);
+    let rtRays = new THREE.WebGLRenderTarget(W * DPR, H * DPR, rtOpts);
+    let rtCol  = new THREE.WebGLRenderTarget(W * DPR, H * DPR, rtOpts);
 
     // ── Canvas textures ────────────────────────────────
     // Two canvases: one for the occluder pass, one for the colour pass.
@@ -147,39 +149,46 @@
     let fontSize = 0, textY = 0;
 
     function buildTextures() {
-      occCvs.width = colCvs.width = W;
-      occCvs.height = colCvs.height = H;
+      // Physical pixel dimensions for the canvases — must match the render targets.
+      const PW = W * DPR;
+      const PH = H * DPR;
+      occCvs.width = colCvs.width   = PW;
+      occCvs.height = colCvs.height = PH;
 
-      // Font: target 28% of viewport height, but cap so "Bobby" never
-      // overflows horizontally — critical on portrait mobile.
+      // fontSize and textY are kept in CSS pixels so positionLower() can place
+      // the HTML overlay correctly. All canvas drawing uses physical pixels (×DPR).
       fontSize = H * 0.28;
       textY    = H * 0.44;
-      // Measure at the target size, then scale down if it exceeds 88% of width.
-      occCtx.font = `500 ${fontSize}px 'Bitcount Prop Double', monospace`;
+      let pxSize  = fontSize * DPR;
+      const pxTextY = textY * DPR;
+
+      // Measure at physical size, scale down if "Bobby" would overflow horizontally.
+      occCtx.font = `500 ${pxSize}px 'Bitcount Prop Double', monospace`;
       const measured = occCtx.measureText('Bobby').width;
-      if (measured > W * 0.88) fontSize *= (W * 0.88) / measured;
-      const fontStr = `500 ${fontSize}px 'Bitcount Prop Double', monospace`;
+      if (measured > PW * 0.88) {
+        pxSize   *= (PW * 0.88) / measured;
+        fontSize  = pxSize / DPR; // keep CSS equivalent in sync for positionLower
+      }
+      const fontStr = `500 ${pxSize}px 'Bitcount Prop Double', monospace`;
 
       // Occluder (wall) pass: solid black canvas with transparent letter holes.
-      // Rendered over a white cleared background (the "light source" behind the wall).
-      // The white background is only visible through the cutouts → rays trace through letters.
       occCtx.fillStyle = '#000';
-      occCtx.fillRect(0, 0, W, H);
+      occCtx.fillRect(0, 0, PW, PH);
       occCtx.globalCompositeOperation = 'destination-out';
       occCtx.fillStyle = 'rgba(255,255,255,1)';
       occCtx.font = fontStr;
       occCtx.textAlign    = 'center';
       occCtx.textBaseline = 'middle';
-      occCtx.fillText('Bobby', W * 0.5, textY);
+      occCtx.fillText('Bobby', PW * 0.5, pxTextY);
       occCtx.globalCompositeOperation = 'source-over';
 
       // Colour pass: transparent background + warm orange text.
-      colCtx.clearRect(0, 0, W, H);
+      colCtx.clearRect(0, 0, PW, PH);
       colCtx.fillStyle = '#f09060';
       colCtx.font = fontStr;
       colCtx.textAlign    = 'center';
       colCtx.textBaseline = 'middle';
-      colCtx.fillText('Bobby', W * 0.5, textY);
+      colCtx.fillText('Bobby', PW * 0.5, pxTextY);
 
       occTex.needsUpdate = true;
       colTex.needsUpdate = true;
@@ -420,9 +429,14 @@
 
     // ── Resize ──────────────────────────────────────────
     window.addEventListener('resize', () => {
-      W = window.innerWidth; H = window.innerHeight;
+      W   = window.innerWidth;
+      H   = window.innerHeight;
+      DPR = Math.min(window.devicePixelRatio, 2);
+      renderer.setPixelRatio(DPR);
       renderer.setSize(W, H);
-      rtOcc.setSize(W, H); rtRays.setSize(W, H); rtCol.setSize(W, H);
+      rtOcc.setSize(W * DPR, H * DPR);
+      rtRays.setSize(W * DPR, H * DPR);
+      rtCol.setSize(W * DPR, H * DPR);
       buildTextures();
       positionLower();
     });
