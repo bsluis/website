@@ -246,12 +246,19 @@
           float d     = 1.0;
           vec3  col   = vec3(0.0);
 
+          // Chromatic aberration on the occluder sample: R/B channels are offset
+          // radially from the light source, splitting ray edges into a spectrum fringe.
+          // Aberration grows with distance from lightPos — stronger at the periphery.
+          vec2 aberr = (lightPos - vUv) * 0.024;
+
           for (int i = 0; i < SAMPLES; i++) {
             tc  -= delta;
             // step() binarises the sample — snaps anti-aliased letter edges to
             // hard 0/1 so there is no dim halo at the boundary of each cutout.
-            vec3 s = step(vec3(0.5), texture2D(tOccluder, tc).rgb);
-            s   *= d * weight;
+            float sr = step(0.5, texture2D(tOccluder, tc + aberr).r);  // R toward light
+            float sg = step(0.5, texture2D(tOccluder, tc       ).g);   // G centered
+            float sb = step(0.5, texture2D(tOccluder, tc - aberr).b);  // B away from light
+            vec3  s  = vec3(sr, sg, sb) * d * weight;
             col += s;
             d   *= decay;
           }
@@ -277,8 +284,9 @@
      * 4. Radial vignette to focus attention on the centre.
      */
     const compUniforms = {
-      tRays  : { value: rtRays.texture },
-      bgColor: { value: new THREE.Vector3(0.010, 0.022, 0.010) },
+      tRays   : { value: rtRays.texture },
+      bgColor : { value: new THREE.Vector3(0.010, 0.022, 0.010) },
+      lightPos: { value: new THREE.Vector2(0.5, 0.56) },
     };
 
     const compScene = new THREE.Scene();
@@ -294,18 +302,30 @@
       fragmentShader: /* glsl */`
         uniform sampler2D tRays;
         uniform vec3      bgColor;
+        uniform vec2      lightPos;
         varying vec2      vUv;
 
         void main() {
-          vec3 rays = texture2D(tRays, vUv).rgb;
+          // Screen-space chromatic aberration: R/B channels sampled at UV offsets
+          // that grow toward the screen edges — like a real lens CA.
+          vec2  ssAberr = (vUv - 0.5) * 0.014;
+          vec3  rays;
+          rays.r = texture2D(tRays, vUv + ssAberr).r;
+          rays.g = texture2D(tRays, vUv          ).g;
+          rays.b = texture2D(tRays, vUv - ssAberr).b;
 
           // Background
           vec3 col = bgColor;
 
           // Screen blend: rays add light without blowing out background.
-          // The letterforms are defined entirely by the rays themselves —
-          // no separate text overlay, so nothing sits "on top" of the effect.
           col = 1.0 - (1.0 - col) * (1.0 - rays);
+
+          // Anamorphic lens streak: a thin horizontal band of cool teal light
+          // crossing the frame at the light source's Y position.
+          float dy     = vUv.y - lightPos.y;
+          float streak = exp(-dy * dy * 550.0);                    // thin vertically
+          streak      *= exp(-abs(vUv.x - lightPos.x) * 1.5);     // fades left and right
+          col         += vec3(0.10, 0.75, 0.60) * streak * 0.26;  // cool teal tint
 
           // Radial vignette — darkens corners, focuses centre
           vec2  uv = vUv - 0.5;
@@ -328,25 +348,61 @@
 
     // ── Light position state ────────────────────────────
     // Stored in world space (x: −1..1, y: −1..1).
-    // disc.position and rayUniforms.lightPos are both derived from this.
     let lx = 0, ly = 0.12;    // current (smoothed) — centred on "Bobby"
-    let tlx = 0, tly = 0.12;  // target (from mouse/touch)
+    let tlx = 0, tly = 0.12;  // target
 
     // Convert world → UV for the god-ray shader
     function worldToUV(wx, wy) {
       return new THREE.Vector2((wx + 1) * 0.5, (wy + 1) * 0.5);
     }
 
+    // ── Auto-animation state ─────────────────────────────
+    // When there is no user interaction the light sweeps left↔right with an
+    // ease-in-out curve, short pauses at the extremes, and longer pauses over
+    // the letterforms where the brand is most visible.
+    // Cycle breakdown (phase 0→1, ~12 s):
+    //   0.00–0.05  pause at left       (short)
+    //   0.05–0.20  ease left → center
+    //   0.20–0.35  pause at center     (long — "Bobby" fully lit)
+    //   0.35–0.50  ease center → right
+    //   0.50–0.55  pause at right      (short)
+    //   0.55–0.70  ease right → center
+    //   0.70–0.85  pause at center     (long — "Bobby" fully lit)
+    //   0.85–1.00  ease center → left (wraps)
+    const AUTO_RANGE    = 0.78;  // world-space half-width of sweep (±)
+    const AUTO_DURATION = 12.0;  // seconds per full cycle
+    const IDLE_DELAY    = 2000;  // ms of inactivity before auto resumes
+
+    let autoPhase     = 0.05;  // start at the beginning of the first sweep (left → center)
+    let isInteracting = false;
+    let idleTimer     = null;
+
+    // Random center-pause positions — one of the three middle letters of "Bobby".
+    // Two slots: one per center pause in the cycle. Each is picked at the START
+    // of the inbound sweep so the sweep has a known target throughout.
+    // ±0.20 world units ≈ one letter-width either side of dead-center.
+    const CENTER_OFFSETS = [-0.20, 0, 0.20];
+    let centerPos        = [0, 0]; // [first pause, second pause]
+    let centerSegment    = -1;     // which approach-segment is active (-1 = neither)
+    let prevCenterSeg    = -1;     // used to detect segment transitions for Y pick
+    let autoYTarget      = 0.12;   // current random Y target (updated each segment)
+
+    function easeInOut(t) {
+      return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+    }
+
     function onPointer(clientX, clientY) {
-      // Use getBoundingClientRect so coordinates are correct on iOS Safari
-      // (avoids the 100vh / address-bar mismatch).
+      // Any pointer activity marks the session as interactive and resets the
+      // idle countdown; auto-animation resumes IDLE_DELAY ms after the last move.
+      isInteracting = true;
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => { isInteracting = false; }, IDLE_DELAY);
+
       const rect = renderer.domElement.getBoundingClientRect();
       const sx = clientX - rect.left;
       const sy = clientY - rect.top;
-      // Full left→right sweep shifts the light by ±0.9 world units — feels
-      // immediate even on a narrow phone screen.
       tlx = ((sx / rect.width)  - 0.5) * 1.8;
-      tly = 0.12 + (0.5 - sy / rect.height) * 0.30;
+      tly = 0.12 + (0.5 - sy / rect.height) * 0.55;
     }
 
     document.addEventListener('mousemove', e => onPointer(e.clientX, e.clientY));
@@ -356,6 +412,11 @@
       e.preventDefault();
       onPointer(e.touches[0].clientX, e.touches[0].clientY);
     }, { passive: false });
+    document.addEventListener('touchend', () => {
+      // Finger lifted — start the idle countdown (same as mouse going quiet)
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => { isInteracting = false; }, IDLE_DELAY);
+    });
 
     // ── Resize ──────────────────────────────────────────
     window.addEventListener('resize', () => {
@@ -372,12 +433,56 @@
 
     // ── Render loop ─────────────────────────────────────
     const clock = new THREE.Clock();
+    let prevT = 0;
 
     function animate() {
       requestAnimationFrame(animate);
-      const t = clock.getElapsedTime();
+      const t  = clock.getElapsedTime();
+      const dt = Math.min(t - prevT, 0.1); // cap so tab-switch doesn't jump
+      prevT = t;
 
-      // Smooth light toward pointer target
+      // ── Auto-animation (runs only when no user interaction) ──────
+      if (!isInteracting) {
+        autoPhase = (autoPhase + dt / AUTO_DURATION) % 1;
+
+        let ax;
+        // Pick the random center target at the START of each inbound sweep so the
+        // sweep has a known destination throughout.
+        // Segment 0: left→center sweep + first pause  (0.05–0.35)
+        // Segment 1: right→center sweep + second pause (0.55–0.85)
+        if      (autoPhase >= 0.05 && autoPhase < 0.35 && centerSegment !== 0) {
+          centerSegment = 0;
+          centerPos[0]  = CENTER_OFFSETS[Math.floor(Math.random() * CENTER_OFFSETS.length)];
+        } else if (autoPhase >= 0.55 && autoPhase < 0.85 && centerSegment !== 1) {
+          centerSegment = 1;
+          centerPos[1]  = CENTER_OFFSETS[Math.floor(Math.random() * CENTER_OFFSETS.length)];
+        } else if (autoPhase < 0.05 || (autoPhase >= 0.35 && autoPhase < 0.55) || autoPhase >= 0.85) {
+          centerSegment = -1;
+        }
+
+        // Each time we transition to a new segment, pick a fresh random Y target.
+        // This gives gentle vertical drift — a different angle of light each sweep.
+        if (centerSegment !== prevCenterSeg) {
+          autoYTarget  = 0.12 + (Math.random() - 0.5) * 0.38;
+          prevCenterSeg = centerSegment;
+        }
+
+        const c0 = centerPos[0], c1 = centerPos[1];
+        if      (autoPhase < 0.05) ax = -AUTO_RANGE;                                                                  // pause left  (short)
+        else if (autoPhase < 0.20) ax = -AUTO_RANGE + (AUTO_RANGE + c0) * easeInOut((autoPhase - 0.05) / 0.15);     // left → c0
+        else if (autoPhase < 0.35) ax = c0;                                                                            // pause at c0 (long)
+        else if (autoPhase < 0.50) ax = c0 + (AUTO_RANGE - c0)          * easeInOut((autoPhase - 0.35) / 0.15);     // c0 → right
+        else if (autoPhase < 0.55) ax =  AUTO_RANGE;                                                                  // pause right (short)
+        else if (autoPhase < 0.70) ax =  AUTO_RANGE - (AUTO_RANGE - c1) * easeInOut((autoPhase - 0.55) / 0.15);     // right → c1
+        else if (autoPhase < 0.85) ax = c1;                                                                            // pause at c1 (long)
+        else                       ax = c1 - (AUTO_RANGE + c1)          * easeInOut((autoPhase - 0.85) / 0.15);     // c1 → left
+
+        tlx = ax;
+        // Vertical target drifts toward the current random Y — different each segment
+        tly += (autoYTarget - tly) * 0.015;
+      }
+
+      // Smooth light toward target (interaction or auto)
       lx += (tlx - lx) * 0.05;
       ly += (tly - ly) * 0.05;
 
@@ -385,8 +490,10 @@
       const fx = lx + Math.sin(t * 0.40) * 0.018;
       const fy = ly + Math.sin(t * 0.27) * 0.013;
 
-      // Sync ray shader light position
-      rayUniforms.lightPos.value.copy(worldToUV(fx, fy));
+      // Sync ray shader + composite shader light position (streak needs it too)
+      const lightUV = worldToUV(fx, fy);
+      rayUniforms.lightPos.value.copy(lightUV);
+      compUniforms.lightPos.value.copy(lightUV);
 
       // Pulse exposure — subtle living quality
       rayUniforms.exposure.value = 0.30 + Math.sin(t * 0.72) * 0.06;
