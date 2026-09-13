@@ -484,6 +484,15 @@
            (e.g. the Watch now button) — pad past both the home-indicator
            safe area and a fixed buffer for that toolbar. */
         padding-bottom: calc(var(--space-lg) + env(safe-area-inset-bottom, 0px) + 3rem);
+        /* In standalone home-screen mode there's no browser chrome to push
+           content down from the status bar/notch, so inset: 0 lets it
+           overlay the top of the sheet (including the close button) —
+           pad past the top safe area too. */
+        padding-top: calc(var(--space-lg) + env(safe-area-inset-top, 0px));
+      }
+
+      .close {
+        top: calc(var(--space-md) + env(safe-area-inset-top, 0px));
       }
     }
 
@@ -773,9 +782,11 @@
       border: 1px solid var(--color-border);
       border-radius: var(--radius-pill);
       color: var(--color-text-muted);
-      font-size: 16px;
-      line-height: 1;
       cursor: pointer;
+    }
+    .settings-button svg {
+      width: 16px;
+      height: 16px;
     }
     .settings-button:hover {
       border-color: var(--color-primary);
@@ -827,7 +838,14 @@
       <header>
         <div class="header-top">
           <h1>BOBFlix</h1>
-          <button class="settings-button" aria-label="Settings" @click=${()=>this.settingsOpen=!0}>⚙︎</button>
+          <button class="settings-button" aria-label="Settings" @click=${()=>this.settingsOpen=!0}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path
+                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+              ></path>
+            </svg>
+          </button>
         </div>
         <div class="view-switcher">
           ${[`grid`,`list`,`strip`].map(e=>L`
