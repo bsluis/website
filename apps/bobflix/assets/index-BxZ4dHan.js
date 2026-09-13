@@ -12,10 +12,19 @@
       border-radius: var(--radius);
       transition: box-shadow var(--motion-fast) var(--motion-ease);
     }
-    figure:focus-visible,
-    figure:hover {
+    figure:focus-visible {
       box-shadow: 0 0 0 2px var(--color-secondary);
       outline: none;
+    }
+    /* Scoped to real pointer devices: on touch, tapping outside a modal to
+       close it can leave the card that ends up underneath the tap point
+       registering as "hovered" once the modal is removed — there's no
+       real hover on touch, so it shouldn't apply there at all. */
+    @media (hover: hover) and (pointer: fine) {
+      figure:hover {
+        box-shadow: 0 0 0 2px var(--color-secondary);
+        outline: none;
+      }
     }
     img {
       display: block;
@@ -729,7 +738,7 @@
     .message.success {
       color: var(--color-secondary);
     }
-  `;constructor(){super(),this.exportJson=`{}`,this.message=null}close(){this.dispatchEvent(new CustomEvent(`dialog-close`,{bubbles:!0,composed:!0}))}exportData(){let e=new Blob([this.exportJson],{type:`application/json`}),t=URL.createObjectURL(e),n=document.createElement(`a`);n.href=t,n.download=`bobflix-state.json`,n.click(),URL.revokeObjectURL(t)}async handleFile(e){let t=e.target.files?.[0];if(t){try{let e=await t.text(),n=JSON.parse(e);this.dispatchEvent(new CustomEvent(`import-state`,{detail:n,bubbles:!0,composed:!0})),this.message={type:`success`,text:`Imported successfully.`}}catch{this.message={type:`error`,text:`Couldn't read that file — is it a BOBFlix export?`}}e.target.value=``}}render(){return L`
+  `;constructor(){super(),this.exportJson=`{}`,this.message=null}connectedCallback(){super.connectedCallback(),this._onKeydown=e=>{e.key===`Escape`&&this.close()},document.addEventListener(`keydown`,this._onKeydown),this.addEventListener(`click`,e=>{let t=this.shadowRoot.querySelector(`.dialog`);e.composedPath().includes(t)||this.close()}),this._previousBodyOverflow=document.body.style.overflow,document.body.style.overflow=`hidden`}disconnectedCallback(){document.removeEventListener(`keydown`,this._onKeydown),document.body.style.overflow=this._previousBodyOverflow,super.disconnectedCallback()}close(){this.dispatchEvent(new CustomEvent(`dialog-close`,{bubbles:!0,composed:!0}))}exportData(){let e=new Blob([this.exportJson],{type:`application/json`}),t=URL.createObjectURL(e),n=document.createElement(`a`);n.href=t,n.download=`bobflix-state.json`,n.click(),URL.revokeObjectURL(t)}async handleFile(e){let t=e.target.files?.[0];if(t){try{let e=await t.text(),n=JSON.parse(e);this.dispatchEvent(new CustomEvent(`import-state`,{detail:n,bubbles:!0,composed:!0})),this.message={type:`success`,text:`Imported successfully.`}}catch{this.message={type:`error`,text:`Couldn't read that file — is it a BOBFlix export?`}}e.target.value=``}}render(){return L`
       <div class="dialog">
         <button class="close" @click=${()=>this.close()} aria-label="Close">✕</button>
         <h2>Settings</h2>
