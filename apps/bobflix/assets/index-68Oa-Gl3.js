@@ -447,7 +447,7 @@
           </div>
         </div>
       </div>
-    `}};customElements.define(`filter-bar`,Ne);var Pe=class extends J{static properties={movie:{type:Object},watchedAt:{type:String}};static styles=o`
+    `}};customElements.define(`filter-bar`,Ne);var Pe=typeof navigator<`u`&&navigator.standalone===!0,Fe=class extends J{static properties={movie:{type:Object},watchedAt:{type:String}};static styles=o`
     :host {
       position: fixed;
       inset: 0;
@@ -514,21 +514,23 @@
       .close {
         top: calc(var(--space-md) + env(safe-area-inset-top, 0px));
       }
-    }
 
-    /* display-mode: standalone matches only when running as an iOS
-       home-screen bookmark, never a normal browser tab — the one scenario
-       env(safe-area-inset-top) needs to actually clear something. It's
-       enforced here as a hard floor via max(), in case that env() value
-       itself under-reports the real status bar height on a given device/
-       iOS version: this guarantees real clearance either way, rather than
-       trusting env() alone to always be exactly right. */
-    @media (max-width: 640px) and (display-mode: standalone) {
-      .dialog {
-        padding-top: max(calc(var(--space-lg) + env(safe-area-inset-top, 0px)), 3.75rem);
+      /* The @media (display-mode: standalone) attempt at this (a previous
+         revision) had no effect in testing — apparently it doesn't
+         reliably match this app's iOS home-screen bookmark, likely
+         because that media feature is really designed around a Web App
+         Manifest, which this app doesn't have. IS_IOS_STANDALONE
+         (navigator.standalone, iOS Safari's own long-supported flag for
+         exactly this scenario) drives a plain class instead, so detection
+         doesn't depend on that media query at all. Fixed rem values
+         rather than env() — the point of this fallback is to not depend
+         on env(safe-area-inset-top) either, in case that's also
+         under-reporting here. */
+      .dialog.standalone {
+        padding-top: 4.5rem;
       }
-      .close {
-        top: max(calc(var(--space-md) + env(safe-area-inset-top, 0px)), 3rem);
+      .dialog.standalone .close {
+        top: 3.5rem;
       }
     }
 
@@ -605,7 +607,7 @@
       margin: 0;
     }
   `;connectedCallback(){super.connectedCallback(),this._onKeydown=e=>{e.key===`Escape`&&this.close()},document.addEventListener(`keydown`,this._onKeydown),this.addEventListener(`click`,e=>{let t=this.shadowRoot.querySelector(`.dialog`);e.composedPath().includes(t)||this.close()}),this._previousBodyOverflow=document.body.style.overflow,document.body.style.overflow=`hidden`}disconnectedCallback(){document.removeEventListener(`keydown`,this._onKeydown),document.body.style.overflow=this._previousBodyOverflow,super.disconnectedCallback()}close(){this.dispatchEvent(new CustomEvent(`modal-close`,{bubbles:!0,composed:!0}))}toggleWatched(){this.dispatchEvent(new CustomEvent(`toggle-watched`,{detail:this.movie.id,bubbles:!0,composed:!0}))}render(){let e=this.movie;return L`
-      <div class="dialog">
+      <div class="dialog ${Pe?`standalone`:``}">
         <button class="close" @click=${()=>this.close()} aria-label="Close">✕</button>
         ${e.poster?L`<img src=${e.poster} alt="${e.title} poster" />`:L`<img alt="No poster available" />`}
         <div>
@@ -636,7 +638,7 @@
           </div>
         </div>
       </div>
-    `}};customElements.define(`movie-modal`,Pe);var Fe=class extends J{static properties={exportJson:{type:String},message:{state:!0}};static styles=o`
+    `}};customElements.define(`movie-modal`,Fe);var Ie=class extends J{static properties={exportJson:{type:String},message:{state:!0}};static styles=o`
     :host {
       position: fixed;
       inset: 0;
@@ -688,18 +690,18 @@
       .close {
         top: calc(var(--space-md) + env(safe-area-inset-top, 0px));
       }
-    }
 
-    /* display-mode: standalone matches only when running as an iOS
-       home-screen bookmark, never a normal browser tab — see
-       movie-modal.js for why this is enforced as a hard floor via max()
-       rather than trusting env(safe-area-inset-top) alone to be accurate. */
-    @media (max-width: 640px) and (display-mode: standalone) {
-      .dialog {
-        padding-top: max(calc(var(--space-lg) + env(safe-area-inset-top, 0px)), 3.75rem);
+      /* The @media (display-mode: standalone) attempt at this (a previous
+         revision) had no effect in testing — see platform.js for why
+         IS_IOS_STANDALONE (navigator.standalone) drives a plain class
+         instead. Fixed rem values rather than env() — the point of this
+         fallback is to not depend on env(safe-area-inset-top) either, in
+         case that's also under-reporting here. */
+      .dialog.standalone {
+        padding-top: 4.5rem;
       }
-      .close {
-        top: max(calc(var(--space-md) + env(safe-area-inset-top, 0px)), 3rem);
+      .dialog.standalone .close {
+        top: 3.5rem;
       }
     }
 
@@ -789,7 +791,7 @@
       color: var(--color-secondary);
     }
   `;constructor(){super(),this.exportJson=`{}`,this.message=null}connectedCallback(){super.connectedCallback(),this._onKeydown=e=>{e.key===`Escape`&&this.close()},document.addEventListener(`keydown`,this._onKeydown),this.addEventListener(`click`,e=>{let t=this.shadowRoot.querySelector(`.dialog`);e.composedPath().includes(t)||this.close()}),this._previousBodyOverflow=document.body.style.overflow,document.body.style.overflow=`hidden`}disconnectedCallback(){document.removeEventListener(`keydown`,this._onKeydown),document.body.style.overflow=this._previousBodyOverflow,super.disconnectedCallback()}close(){this.dispatchEvent(new CustomEvent(`dialog-close`,{bubbles:!0,composed:!0}))}exportData(){let e=new Blob([this.exportJson],{type:`application/json`}),t=URL.createObjectURL(e),n=document.createElement(`a`);n.href=t,n.download=`bobflix-state.json`,n.click(),URL.revokeObjectURL(t)}async handleFile(e){let t=e.target.files?.[0];if(t){try{let e=await t.text(),n=JSON.parse(e);this.dispatchEvent(new CustomEvent(`import-state`,{detail:n,bubbles:!0,composed:!0})),this.message={type:`success`,text:`Imported successfully.`}}catch{this.message={type:`error`,text:`Couldn't read that file — is it a BOBFlix export?`}}e.target.value=``}}render(){return L`
-      <div class="dialog">
+      <div class="dialog ${Pe?`standalone`:``}">
         <button class="close" @click=${()=>this.close()} aria-label="Close">✕</button>
         <h2>Settings</h2>
 
@@ -803,7 +805,7 @@
 
         ${this.message?L`<p class="message ${this.message.type}">${this.message.text}</p>`:``}
       </div>
-    `}};customElements.define(`settings-dialog`,Fe);var Ie=Se(Y),Le=new Map(Y.map(e=>[e.id,e])),Re=class extends J{static properties={view:{state:!0},filters:{state:!0},sort:{state:!0},selectedId:{state:!0},watched:{state:!0},filterUsageLog:{state:!0},settingsOpen:{state:!0}};static styles=o`
+    `}};customElements.define(`settings-dialog`,Ie);var Le=Se(Y),Re=new Map(Y.map(e=>[e.id,e])),ze=class extends J{static properties={view:{state:!0},filters:{state:!0},sort:{state:!0},selectedId:{state:!0},watched:{state:!0},filterUsageLog:{state:!0},settingsOpen:{state:!0}};static styles=o`
     :host {
       display: block;
       font-family: var(--font-ui);
@@ -903,7 +905,7 @@
     .view-switcher button[aria-pressed='true']:hover {
       color: var(--color-primary-text);
     }
-  `;constructor(){super();let e=we();this.view=e.view,this.sort=e.sort,this.watched=e.watched,this.filterUsageLog=e.filterUsageLog,this.filters=X(),this.selectedId=null,this.settingsOpen=!1}updated(e){(e.has(`view`)||e.has(`sort`)||e.has(`watched`)||e.has(`filterUsageLog`))&&De({view:this.view,sort:this.sort,watched:this.watched,filterUsageLog:this.filterUsageLog})}setView(e){this.view=e}selectMovie(e){this.selectedId=e}closeModal(){this.selectedId=null}toggleWatched(e){let t=new Map(this.watched);t.has(e)?t.delete(e):(t.set(e,new Date().toISOString()),this.filterUsageLog=ke(this.filterUsageLog,e,this.filters),this.filters=X()),this.watched=t}applyImportedState(e){let t=Te(e);this.view=t.view,this.sort=t.sort,this.watched=t.watched,this.filterUsageLog=t.filterUsageLog}render(){let e=xe(_e(Y,this.filters,this.watched),this.sort),t=this.selectedId?Le.get(this.selectedId):null;return L`
+  `;constructor(){super();let e=we();this.view=e.view,this.sort=e.sort,this.watched=e.watched,this.filterUsageLog=e.filterUsageLog,this.filters=X(),this.selectedId=null,this.settingsOpen=!1}updated(e){(e.has(`view`)||e.has(`sort`)||e.has(`watched`)||e.has(`filterUsageLog`))&&De({view:this.view,sort:this.sort,watched:this.watched,filterUsageLog:this.filterUsageLog})}setView(e){this.view=e}selectMovie(e){this.selectedId=e}closeModal(){this.selectedId=null}toggleWatched(e){let t=new Map(this.watched);t.has(e)?t.delete(e):(t.set(e,new Date().toISOString()),this.filterUsageLog=ke(this.filterUsageLog,e,this.filters),this.filters=X()),this.watched=t}applyImportedState(e){let t=Te(e);this.view=t.view,this.sort=t.sort,this.watched=t.watched,this.filterUsageLog=t.filterUsageLog}render(){let e=xe(_e(Y,this.filters,this.watched),this.sort),t=this.selectedId?Re.get(this.selectedId):null;return L`
       <header>
         <div class="header-top">
           <h1>BOBFlix</h1>
@@ -922,7 +924,7 @@
             `)}
         </div>
         <filter-bar
-          .options=${Ie}
+          .options=${Le}
           .filters=${this.filters}
           .sort=${this.sort}
           .resultCount=${e.length}
@@ -950,4 +952,4 @@
               @import-state=${e=>this.applyImportedState(e.detail)}
             ></settings-dialog>
           `:``}
-    `}};customElements.define(`app-shell`,Re);
+    `}};customElements.define(`app-shell`,ze);
