@@ -516,6 +516,22 @@
       }
     }
 
+    /* display-mode: standalone matches only when running as an iOS
+       home-screen bookmark, never a normal browser tab — the one scenario
+       env(safe-area-inset-top) needs to actually clear something. It's
+       enforced here as a hard floor via max(), in case that env() value
+       itself under-reports the real status bar height on a given device/
+       iOS version: this guarantees real clearance either way, rather than
+       trusting env() alone to always be exactly right. */
+    @media (max-width: 640px) and (display-mode: standalone) {
+      .dialog {
+        padding-top: max(calc(var(--space-lg) + env(safe-area-inset-top, 0px)), 3.75rem);
+      }
+      .close {
+        top: max(calc(var(--space-md) + env(safe-area-inset-top, 0px)), 3rem);
+      }
+    }
+
     img {
       width: 220px;
       aspect-ratio: 2 / 3;
@@ -671,6 +687,19 @@
       }
       .close {
         top: calc(var(--space-md) + env(safe-area-inset-top, 0px));
+      }
+    }
+
+    /* display-mode: standalone matches only when running as an iOS
+       home-screen bookmark, never a normal browser tab — see
+       movie-modal.js for why this is enforced as a hard floor via max()
+       rather than trusting env(safe-area-inset-top) alone to be accurate. */
+    @media (max-width: 640px) and (display-mode: standalone) {
+      .dialog {
+        padding-top: max(calc(var(--space-lg) + env(safe-area-inset-top, 0px)), 3.75rem);
+      }
+      .close {
+        top: max(calc(var(--space-md) + env(safe-area-inset-top, 0px)), 3rem);
       }
     }
 
